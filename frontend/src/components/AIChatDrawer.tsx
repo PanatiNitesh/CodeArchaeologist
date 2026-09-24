@@ -6,11 +6,10 @@ import {
   CheckCircle2, 
   FileCode, 
   GitCommit, 
-  ExternalLink, 
-  BookOpen, 
-  HelpCircle,
   X,
-  MessageSquare
+  CornerDownLeft,
+  ChevronRight,
+  ShieldCheck
 } from 'lucide-react';
 import { RAGAnswerResponse, EvidenceItem } from '../api/client';
 
@@ -41,9 +40,9 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
     {
       role: 'assistant',
       content: (
-        "Welcome to **CodeArchaeologist Intelligence Chat**. " +
-        "I query your AST dependency graph, multi-tier call flows, and historical Git archaeology to provide **evidence-based explanations** with clickable citations.\n\n" +
-        "Try asking any question below or click a suggested prompt."
+        "Welcome to **CodeArchaeologist AI Assistant**.\n" +
+        "I synthesize answers grounded strictly in your **AST Dependency Graph**, **Multi-Tier Call Chains**, and **Empirical Git History**.\n\n" +
+        "Every claim cites verifiable source lines and commit hashes."
       )
     }
   ]);
@@ -55,7 +54,7 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
     "Why was Redis introduced?",
     "What changed in the payment module?",
     "Which components depend on UserService?",
-    "What could break if I modify UserService.ts?",
+    "What may be affected if I modify UserService.ts?",
     "Show me the most important architectural changes."
   ];
 
@@ -63,7 +62,6 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
     const q = (questionToSend || input).trim();
     if (!q || loading) return;
 
-    // Add user message
     setMessages(prev => [...prev, { role: 'user', content: q }]);
     setInput('');
     setLoading(true);
@@ -85,7 +83,7 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
         ...prev,
         {
           role: 'assistant',
-          content: `Analysis failed: ${err}`
+          content: `Synthesis error: ${err}`
         }
       ]);
     } finally {
@@ -96,41 +94,40 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-y-0 right-0 w-full max-w-xl bg-slate-950/95 border-l border-indigo-500/30 backdrop-blur-xl z-50 flex flex-col shadow-2xl">
+    <div className="fixed inset-y-0 right-0 w-full max-w-lg bg-[#0e0f14] border-l border-[var(--border-hairline)] z-50 flex flex-col shadow-2xl select-none">
       {/* Drawer Header */}
-      <div className="p-4 border-b border-subtle flex items-center justify-between bg-slate-900/60">
+      <div className="h-12 px-4 border-b border-[var(--border-hairline)] flex items-center justify-between bg-[#121318]">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-indigo-500/20 border border-indigo-500/40 flex items-center justify-center text-indigo-400">
-            <Bot className="w-4 h-4" />
+          <div className="w-6 h-6 rounded bg-indigo-600/20 border border-indigo-500/40 flex items-center justify-center text-indigo-400">
+            <Bot className="w-3.5 h-3.5" />
           </div>
           <div>
-            <h3 className="font-bold text-sm text-white flex items-center gap-2">
-              CodeArchaeologist AI
-              <span className="badge badge-service text-[9px]">Evidence-Based RAG</span>
-            </h3>
-            <p className="text-[11px] text-slate-400 font-mono">
-              Graph + AST + Git History + Embeddings
-            </p>
+            <span className="font-semibold text-xs text-white font-mono flex items-center gap-2">
+              CodeArchaeologist Assistant
+              <span className="px-1.5 py-0.2 rounded text-[9px] bg-indigo-950 text-indigo-400 border border-indigo-800">
+                EVIDENCE RAG
+              </span>
+            </span>
           </div>
         </div>
 
-        <button onClick={onClose} className="text-slate-400 hover:text-white p-1">
-          <X className="w-5 h-5" />
+        <button onClick={onClose} className="text-zinc-500 hover:text-zinc-200 text-xs font-mono">
+          ✕
         </button>
       </div>
 
-      {/* Suggested Prompts Banner */}
-      <div className="p-3 border-b border-subtle bg-slate-900/40">
-        <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1.5">
-          Suggested Archaeological Inquiries:
+      {/* Suggested Inquiries */}
+      <div className="p-3 border-b border-[var(--border-hairline)] bg-[#101116]">
+        <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-500 block mb-1.5">
+          Suggested Inquiries:
         </span>
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap gap-1">
           {suggestedPrompts.map((p, idx) => (
             <button
               key={idx}
               onClick={() => handleSend(p)}
               disabled={loading}
-              className="text-[11px] px-2 py-1 rounded bg-slate-800/80 hover:bg-indigo-600/30 hover:border-indigo-500/50 border border-slate-700/60 text-slate-300 text-left transition-all"
+              className="text-[10.5px] px-2 py-0.5 rounded bg-[#161720] hover:bg-[#1f212c] border border-zinc-800 text-zinc-300 transition-colors font-sans text-left"
             >
               {p}
             </button>
@@ -139,74 +136,74 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
       </div>
 
       {/* Messages Scroll Area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4 space-y-3.5 select-text">
         {messages.map((msg, i) => (
           <div
             key={i}
             className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}
           >
             <div
-              className={`max-w-[92%] rounded-xl p-3.5 text-xs leading-relaxed ${
+              className={`max-w-[94%] rounded-lg p-3 text-xs leading-relaxed ${
                 msg.role === 'user'
-                  ? 'bg-indigo-600 text-white shadow-md'
-                  : 'bg-slate-900/90 text-slate-200 border border-slate-800'
+                  ? 'bg-indigo-600 text-white font-sans'
+                  : 'bg-[#14151b] text-zinc-200 border border-zinc-800/80 font-sans'
               }`}
             >
-              {/* Message Content */}
-              <div className="whitespace-pre-line space-y-2">
+              {/* Content */}
+              <div className="whitespace-pre-line space-y-1.5">
                 {msg.content}
               </div>
 
-              {/* Verified Evidence Drawer */}
+              {/* Verifiable Evidence Drawer */}
               {msg.evidence && msg.evidence.length > 0 && (
-                <div className="mt-3 pt-3 border-t border-slate-800/80 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-1">
-                      <CheckCircle2 className="w-3 h-3 text-cyan-400" />
-                      Verifiable Archaeological Evidence ({msg.evidence.length})
+                <div className="mt-3 pt-2.5 border-t border-zinc-800 space-y-2">
+                  <div className="flex items-center justify-between font-mono">
+                    <span className="text-[10px] font-semibold text-cyan-400 flex items-center gap-1 uppercase tracking-wider">
+                      <ShieldCheck className="w-3 h-3 text-cyan-400" />
+                      Verifiable Archaeological Citations ({msg.evidence.length})
                     </span>
                     {msg.confidence && (
-                      <span className="font-mono text-[10px] text-slate-400">
+                      <span className="text-[10px] text-zinc-500">
                         Confidence: {Math.round(msg.confidence * 100)}%
                       </span>
                     )}
                   </div>
 
-                  <div className="space-y-1.5">
+                  <div className="space-y-1">
                     {msg.evidence.map((ev, eIdx) => (
                       <div
                         key={eIdx}
-                        className="p-2 rounded bg-slate-950/80 border border-slate-800/90 hover:border-cyan-500/40 text-[11px] transition-colors"
+                        className="p-2 rounded bg-[#0d0e13] border border-zinc-800 hover:border-zinc-700 text-[11px] font-mono transition-colors"
                       >
-                        <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center justify-between mb-0.5">
                           <button
                             onClick={() => onSelectFile(ev.file_path)}
-                            className="font-mono font-bold text-cyan-300 hover:underline flex items-center gap-1 truncate text-left"
+                            className="font-bold text-cyan-300 hover:underline flex items-center gap-1 truncate text-left"
                           >
                             <FileCode className="w-3 h-3 text-cyan-400 shrink-0" />
                             <span className="truncate">{ev.file_path}</span>
                             {ev.line_start && (
-                              <span className="text-slate-500 font-normal">
-                                :L{ev.line_start}
+                              <span className="text-zinc-500 font-normal">
+                                :L{ev.line_start}–{ev.line_end}
                               </span>
                             )}
                           </button>
 
                           {ev.commit_hash && (
-                            <span className="font-mono text-[10px] text-indigo-400 bg-indigo-500/10 px-1.5 py-0.5 rounded shrink-0">
+                            <span className="text-[9.5px] text-indigo-400 bg-indigo-950/80 px-1 py-0.5 rounded border border-indigo-900/60 shrink-0">
                               {ev.commit_hash}
                             </span>
                           )}
                         </div>
 
                         {ev.commit_message && (
-                          <div className="text-[10px] text-slate-400 flex items-center gap-1 mb-1">
-                            <GitCommit className="w-3 h-3 text-slate-500 shrink-0" />
-                            <span className="truncate font-mono">"{ev.commit_message}"</span>
+                          <div className="text-[10px] text-zinc-400 flex items-center gap-1 mb-0.5">
+                            <GitCommit className="w-3 h-3 text-zinc-500 shrink-0" />
+                            <span className="truncate">"{ev.commit_message}"</span>
                           </div>
                         )}
 
-                        <p className="text-[10px] text-slate-400 italic">
+                        <p className="text-[10px] text-zinc-500 italic font-sans leading-tight">
                           {ev.relevance_reason}
                         </p>
                       </div>
@@ -219,15 +216,15 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
         ))}
 
         {loading && (
-          <div className="flex items-center gap-2 p-3 text-xs text-indigo-400 font-mono">
-            <Sparkles className="w-4 h-4 animate-spin text-cyan-400" />
-            <span>Consulting Software Graph & Git Archaeology...</span>
+          <div className="flex items-center gap-2 p-2 text-xs text-indigo-400 font-mono">
+            <Sparkles className="w-3.5 h-3.5 animate-spin" />
+            <span>Consulting dependency graph & Git commit logs...</span>
           </div>
         )}
       </div>
 
       {/* Input Field */}
-      <div className="p-3 border-t border-subtle bg-slate-900/60">
+      <div className="p-3 border-t border-[var(--border-hairline)] bg-[#121318]">
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -237,18 +234,18 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
         >
           <input
             type="text"
-            placeholder="Ask anything about architecture, Redis, blast radius, payment..."
+            placeholder="Ask about architecture, Redis, blast reach, payment..."
             value={input}
             onChange={(e) => setInput(e.target.value)}
             disabled={loading}
-            className="flex-1 bg-slate-950 border border-slate-700/80 rounded-lg px-3.5 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono"
+            className="flex-1 bg-[#090a0e] border border-zinc-800 rounded px-3 py-1.5 text-xs font-mono text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-indigo-500"
           />
           <button
             type="submit"
             disabled={loading || !input.trim()}
-            className="btn-primary p-2 rounded-lg"
+            className="btn-studio btn-studio-primary px-3 py-1.5"
           >
-            <Send className="w-4 h-4" />
+            <CornerDownLeft className="w-3.5 h-3.5" />
           </button>
         </form>
       </div>

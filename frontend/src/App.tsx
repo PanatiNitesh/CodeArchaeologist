@@ -6,8 +6,8 @@ import {
   Flame, 
   Cpu, 
   Loader2, 
-  FileText,
-  AlertCircle
+  Command,
+  Sparkles
 } from 'lucide-react';
 import { Header } from './components/Header';
 import { FileTree } from './components/FileTree';
@@ -62,8 +62,7 @@ export const App: React.FC = () => {
     try {
       let repos = await api.getRepositories();
       if (!repos || repos.length === 0) {
-        // Automatically load sample enterprise repo
-        setLoadingMessage('Initializing 2022-2026 Enterprise E-Commerce Sample Repository...');
+        setLoadingMessage('Initializing 2022–2026 Enterprise E-Commerce Sample Repository...');
         await api.loadSample();
         repos = await api.getRepositories();
       }
@@ -81,7 +80,7 @@ export const App: React.FC = () => {
   const switchRepository = async (repoId: string) => {
     setCurrentRepoId(repoId);
     setLoading(true);
-    setLoadingMessage(`Loading architecture graph and Git archaeology for ${repoId}...`);
+    setLoadingMessage(`Indexing architecture graph and Git archaeology for ${repoId}...`);
 
     try {
       const [filesData, graphData, timelineData, evalData] = await Promise.all([
@@ -96,7 +95,6 @@ export const App: React.FC = () => {
       setTimeline(timelineData);
       setEvaluation(evalData);
 
-      // Select default representative service file
       const defaultFile = filesData.find(f => f.path.includes('userService') || f.path.includes('paymentService')) || filesData[0];
       if (defaultFile) {
         await handleSelectFile(defaultFile.path, repoId, filesData);
@@ -133,7 +131,7 @@ export const App: React.FC = () => {
 
   const handleIngest = async (url: string) => {
     setLoading(true);
-    setLoadingMessage('Ingesting repository and running full 8-phase intelligence pipeline...');
+    setLoadingMessage('Executing 8-phase code understanding & Git mining pipeline...');
     try {
       const res = await api.ingest(url);
       const repos = await api.getRepositories();
@@ -148,7 +146,7 @@ export const App: React.FC = () => {
 
   const handleLoadSample = async () => {
     setLoading(true);
-    setLoadingMessage('Loading 2022-2026 Enterprise E-Commerce Sample Repository...');
+    setLoadingMessage('Loading 2022–2026 Enterprise E-Commerce Sample Repository...');
     try {
       const res = await api.loadSample();
       const repos = await api.getRepositories();
@@ -172,8 +170,8 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-screen w-screen overflow-hidden bg-slate-950 text-slate-100">
-      {/* Header */}
+    <div className="flex flex-col h-screen w-screen overflow-hidden bg-[#090a0d] text-zinc-100 font-sans">
+      {/* Precision Header */}
       <Header
         repositories={repositories}
         currentRepoId={currentRepoId}
@@ -184,20 +182,20 @@ export const App: React.FC = () => {
         loading={loading}
       />
 
-      {/* Main Content Area */}
+      {/* Main Studio Viewport */}
       {loading ? (
-        <div className="flex-1 flex flex-col items-center justify-center space-y-4">
-          <Loader2 className="w-10 h-10 animate-spin text-indigo-400" />
-          <p className="font-mono text-sm text-slate-300">{loadingMessage}</p>
-          <span className="text-xs text-slate-500">
+        <div className="flex-1 flex flex-col items-center justify-center space-y-3 select-none">
+          <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
+          <p className="font-mono text-xs text-zinc-300">{loadingMessage}</p>
+          <span className="text-[11px] font-mono text-zinc-600">
             AST Extraction • Graph Generation • Commit Mining • Vector Embeddings
           </span>
         </div>
       ) : (
-        <div className="flex-1 flex flex-col min-h-0 p-3 gap-3 overflow-hidden">
-          {/* Top Row: File Tree (left) + Architecture Graph (center) + File Intelligence (right) */}
-          <div className="flex-1 grid grid-cols-12 gap-3 min-h-0">
-            {/* Left: File Tree (Col 3) */}
+        <div className="flex-1 flex flex-col min-h-0 p-2 gap-2 overflow-hidden">
+          {/* Top Grid: Explorer (Col 2.8) + Topology Graph (Col 5.8) + Inspector (Col 3.4) */}
+          <div className="flex-1 grid grid-cols-12 gap-2 min-h-0">
+            {/* Left: Explorer */}
             <div className="col-span-3 h-full min-h-0">
               <FileTree
                 files={files}
@@ -206,7 +204,7 @@ export const App: React.FC = () => {
               />
             </div>
 
-            {/* Center: Architecture Graph (Col 5) */}
+            {/* Center: Topology Graph */}
             <div className="col-span-5 h-full min-h-0">
               <ArchitectureGraph
                 graph={graph}
@@ -216,7 +214,7 @@ export const App: React.FC = () => {
               />
             </div>
 
-            {/* Right: File Intelligence Panel (Col 4) */}
+            {/* Right: Component Inspector */}
             <div className="col-span-4 h-full min-h-0">
               <FileIntelligence
                 file={selectedFile}
@@ -229,8 +227,8 @@ export const App: React.FC = () => {
             </div>
           </div>
 
-          {/* Bottom Row: Software Timeline */}
-          <div className="h-64 shrink-0 min-h-0">
+          {/* Bottom Dock: Software Evolution Timeline */}
+          <div className="h-56 shrink-0 min-h-0">
             <TimelineView
               timeline={timeline}
               onSelectCommit={(c) => {
@@ -244,14 +242,17 @@ export const App: React.FC = () => {
         </div>
       )}
 
-      {/* Floating AI Chat Trigger Button */}
+      {/* Floating Precision Assistant Trigger */}
       <button
         onClick={() => setIsAIChatOpen(true)}
-        className="fixed bottom-6 right-6 btn-primary rounded-full p-4 shadow-2xl flex items-center gap-2 z-30"
-        title="Open CodeArchaeologist AI Knowledge Chat"
+        className="fixed bottom-4 right-4 px-3 py-2 rounded-lg bg-[#181922] hover:bg-[#20222e] border border-zinc-700/80 shadow-2xl flex items-center gap-2 z-30 transition-all font-mono text-xs text-zinc-200"
+        title="Open CodeArchaeologist Evidence Assistant"
       >
-        <Bot className="w-5 h-5 text-white" />
-        <span className="font-semibold text-xs pr-1">Ask CodeArchaeologist AI</span>
+        <Bot className="w-4 h-4 text-indigo-400" />
+        <span className="font-medium">Evidence Assistant</span>
+        <span className="px-1.5 py-0.5 rounded bg-zinc-800 text-[10px] text-zinc-400 border border-zinc-700">
+          ⌘K
+        </span>
       </button>
 
       {/* AI Chat Drawer */}
