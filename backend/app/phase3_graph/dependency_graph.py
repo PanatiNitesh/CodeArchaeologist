@@ -237,6 +237,10 @@ class DependencyGraphBuilder:
     def _save_edges_to_db(self, repo_id: str, edges: List[GraphEdge]):
         with db.get_connection() as conn:
             cursor = conn.cursor()
+            cursor.execute("""
+            INSERT OR IGNORE INTO repositories (id, name, path)
+            VALUES (?, ?, ?)
+            """, (repo_id, repo_id, ""))
             cursor.execute("DELETE FROM graph_edges WHERE repo_id = ?", (repo_id,))
             records = [
                 (

@@ -106,6 +106,10 @@ class CommitMiner:
     def _save_commits_to_db(self, repo_id: str, commits: List[CommitRecord]):
         with db.get_connection() as conn:
             cursor = conn.cursor()
+            cursor.execute("""
+            INSERT OR IGNORE INTO repositories (id, name, path)
+            VALUES (?, ?, ?)
+            """, (repo_id, repo_id, ""))
             cursor.execute("DELETE FROM commits WHERE repo_id = ?", (repo_id,))
             cursor.execute("DELETE FROM commit_files WHERE repo_id = ?", (repo_id,))
 
