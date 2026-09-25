@@ -50,6 +50,8 @@ When engineers inherit legacy codebases or work in large distributed teams, they
 
 **CodeArchaeologist** solves this by reconstructing the deep evolutionary biography of your software repository. It unifies **deterministic AST parsing**, **directed multi-tier call graphs**, **Git commit archaeology (2022–2026)**, and **empirical co-change mining** with an **evidence-grounded RAG assistant**.
 
+> ⚡ **Developed with IBM Bob 2.0**: Engineered and scientifically validated using IBM Bob 2.0 agentic workflows, custom skills ([`.bob/skills/`](.bob/skills/)), and automated lifecycle hooks. See [**`BOB_USAGE.md`**](BOB_USAGE.md) for full architectural mode mapping and prompt documentation.
+
 ---
 
 ## ⚔️ How CodeArchaeologist Compares

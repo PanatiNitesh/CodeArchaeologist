@@ -161,6 +161,41 @@ export const Header: React.FC<HeaderProps> = ({
           <span>Demo Repo</span>
         </button>
 
+        {/* 1-Click Live GitHub Demo Pathway */}
+        <div className="relative group">
+          <button
+            disabled={loading}
+            className="btn-studio btn-studio-secondary flex items-center gap-1.5 text-cyan-300 border-cyan-900/40 hover:border-cyan-700/60"
+            title="1-Click Analyze Real Open-Source GitHub Repositories"
+          >
+            <FolderGit2 className="w-3.5 h-3.5 text-cyan-400" />
+            <span>Live GitHub Demo</span>
+            <ChevronDown className="w-3 h-3 text-zinc-500" />
+          </button>
+          
+          <div className="hidden group-hover:block absolute right-0 top-full mt-1 w-64 bg-[#14151f] border border-zinc-800 rounded-lg shadow-2xl p-1.5 z-50">
+            <span className="text-[9.5px] uppercase font-mono text-zinc-400 font-semibold px-2 py-1 block border-b border-zinc-800/80 mb-1">
+              Live Ingestion Benchmark Presets:
+            </span>
+            {[
+              { name: 'expressjs/express', desc: 'Node.js REST Framework (30k+ commits)', url: 'https://github.com/expressjs/express' },
+              { name: 'fastapi/fastapi', desc: 'Python ASGI Web Framework', url: 'https://github.com/fastapi/fastapi' },
+              { name: 'pallets/flask', desc: 'Python WSGI Microframework', url: 'https://github.com/pallets/flask' }
+            ].map(repo => (
+              <button
+                key={repo.name}
+                type="button"
+                onClick={() => onIngest(repo.url)}
+                disabled={loading}
+                className="w-full text-left p-2 rounded hover:bg-[#1e202e] transition-colors font-mono block"
+              >
+                <div className="text-xs font-semibold text-zinc-200">⚡ {repo.name}</div>
+                <div className="text-[10px] text-zinc-500">{repo.desc}</div>
+              </button>
+            ))}
+          </div>
+        </div>
+
         <button
           onClick={() => setShowIngestModal(true)}
           disabled={loading}

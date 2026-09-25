@@ -153,35 +153,10 @@ class MLChangeImpactPredictor:
         scored_items.sort(key=lambda x: x.probability, reverse=True)
 
         # Extract empirical feature importance directly from trained model coefficients
-        feature_names = [
-            "co_change_frequency",
-            "jaccard_overlap",
-            "topological_proximity",
-            "direct_dependency",
-            "package_co_location"
-        ]
-        feature_importance = {}
-        if self.model and hasattr(self.model, "coef_"):
-            try:
-                raw_weights = np.abs(self.model.coef_[0])
-                total_w = np.sum(raw_weights)
-                if total_w > 0:
-                    normalized_weights = raw_weights / total_w
-                    feature_importance = {
-                        name: round(float(weight), 3)
-                        for name, weight in zip(feature_names, normalized_weights)
-                    }
-            except Exception:
-                pass
-
-        if not feature_importance:
-            feature_importance = {
-                "co_change_frequency": 0.35,
-                "topological_proximity": 0.25,
-                "direct_dependency": 0.15,
-                "jaccard_overlap": 0.15,
-                "package_co_location": 0.10
-            }
+        coefs = np.abs(self.model.coef_[0]) if (self.model and hasattr(self.model, "coef_")) else np.array([0.42, 0.35, 0.13, 0.10, 0.05])
+        names = ["co_change_frequency", "jaccard_overlap", "graph_closeness", "direct_link", "same_dir"]
+        total = coefs.sum() or 1.0
+        feature_importance = {n: round(float(v / total), 3) for n, v in zip(names, coefs)}
 
         return ChangeImpactPrediction(
             target_file=target_file,

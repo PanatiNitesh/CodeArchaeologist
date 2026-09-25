@@ -114,18 +114,19 @@ export const BlastRadiusModal: React.FC<BlastRadiusModalProps> = ({
                       Empirical Weights (model.coef_)
                     </span>
                   </div>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2 pt-1">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 pt-1">
                     {Object.entries(predictions.feature_importance).map(([feature, weight]) => {
                       const pct = Math.round(weight * 100);
                       const cleanName = feature
-                        .replace('historical_cochange', 'Git Co-Change History')
-                        .replace('transitive_dependency', 'Transitive Graph Reach')
-                        .replace('same_module_proximity', 'Same-Module Locality')
-                        .replace('call_graph_path', 'Direct Call Path');
+                        .replace('co_change_frequency', 'Co-Change Freq')
+                        .replace('jaccard_overlap', 'Jaccard Overlap')
+                        .replace('graph_closeness', 'Graph Closeness')
+                        .replace('direct_link', 'Direct Dependency')
+                        .replace('same_dir', 'Same Directory');
                       return (
                         <div key={feature} className="p-2 rounded bg-[#151622] border border-zinc-800/60 space-y-1">
                           <div className="flex items-center justify-between text-[10px] font-mono">
-                            <span className="text-zinc-400 truncate text-[9.5px]">{cleanName}</span>
+                            <span className="text-zinc-400 truncate text-[9px]">{cleanName}</span>
                             <span className="text-indigo-400 font-bold">{pct}%</span>
                           </div>
                           <div className="w-full bg-zinc-800 rounded-full h-1.5 overflow-hidden">

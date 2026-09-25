@@ -481,16 +481,16 @@ export const ArchitectureGraph: React.FC<ArchitectureGraphProps> = ({
         {/* Edge Types Key */}
         <div className="hidden lg:flex items-center gap-3 border-l border-zinc-800/80 pl-3 shrink-0">
           <div className="flex items-center gap-1.5 text-zinc-400">
-            <span className="w-3.5 h-[2px] bg-slate-400 inline-block" /> Imports
+            <span className="font-bold text-slate-400 font-mono">──</span> Imports
           </div>
           <div className="flex items-center gap-1.5 text-emerald-400">
-            <span className="w-3.5 border-t border-dashed border-emerald-400 inline-block" /> Extends
+            <span className="font-bold text-emerald-400 font-mono">- -</span> Extends
           </div>
           <div className="flex items-center gap-1.5 text-amber-400">
-            <span className="w-3.5 border-t border-dotted border-amber-400 inline-block" /> Calls
+            <span className="font-bold text-amber-400 font-mono">···</span> Calls
           </div>
           <div className="flex items-center gap-1.5 text-rose-400 font-semibold">
-            <span className="w-3.5 h-[2px] bg-rose-500 inline-block" /> Blast Reach
+            <span className="font-bold text-rose-400 font-mono">═══</span> Blast Impact
           </div>
         </div>
 
