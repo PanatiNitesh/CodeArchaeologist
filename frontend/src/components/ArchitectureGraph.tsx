@@ -192,7 +192,40 @@ export const ArchitectureGraph: React.FC<ArchitectureGraphProps> = ({
               markerHeight="5"
               orient="auto-start-reverse"
             >
-              <path d="M 0 1.5 L 10 5 L 0 8.5 z" fill="#4b5563" opacity="0.6" />
+              <path d="M 0 1.5 L 10 5 L 0 8.5 z" fill="#64748b" opacity="0.7" />
+            </marker>
+            <marker
+              id="arrow-import"
+              viewBox="0 0 10 10"
+              refX="22"
+              refY="5"
+              markerWidth="5.5"
+              markerHeight="5.5"
+              orient="auto-start-reverse"
+            >
+              <path d="M 0 1.5 L 10 5 L 0 8.5 z" fill="#818cf8" />
+            </marker>
+            <marker
+              id="arrow-extends"
+              viewBox="0 0 10 10"
+              refX="22"
+              refY="5"
+              markerWidth="6"
+              markerHeight="6"
+              orient="auto-start-reverse"
+            >
+              <path d="M 0 1 L 10 5 L 0 9 z" fill="#34d399" />
+            </marker>
+            <marker
+              id="arrow-calls"
+              viewBox="0 0 10 10"
+              refX="22"
+              refY="5"
+              markerWidth="5.5"
+              markerHeight="5.5"
+              orient="auto-start-reverse"
+            >
+              <path d="M 0 1.5 L 10 5 L 0 8.5 z" fill="#fbbf24" />
             </marker>
             <marker
               id="arrow-active"
@@ -268,31 +301,53 @@ export const ArchitectureGraph: React.FC<ArchitectureGraphProps> = ({
             const cy2 = tgt.y - dy * 0.5;
             const pathD = `M ${src.x} ${src.y} C ${src.x} ${cy1}, ${tgt.x} ${cy2}, ${tgt.x} ${tgt.y}`;
 
-            let stroke = '#262936';
+            const rel = (edge.relation || 'IMPORTS').toUpperCase();
+            let stroke = '#334155';
             let strokeWidth = 1.2;
             let marker = 'url(#arrow-default)';
+            let dashArray: string | undefined = undefined;
+
+            if (rel === 'EXTENDS') {
+              stroke = '#34d399';
+              strokeWidth = 1.4;
+              dashArray = '5 4';
+              marker = 'url(#arrow-extends)';
+            } else if (rel === 'CALLS') {
+              stroke = '#fbbf24';
+              strokeWidth = 1.3;
+              dashArray = '2 3';
+              marker = 'url(#arrow-calls)';
+            } else {
+              stroke = '#475569';
+              strokeWidth = 1.2;
+              marker = 'url(#arrow-import)';
+            }
 
             if (isImpactEdge) {
               stroke = '#f43f5e';
-              strokeWidth = 2.2;
+              strokeWidth = 2.4;
+              dashArray = undefined;
               marker = 'url(#arrow-impact)';
             } else if (isHighlighted) {
-              stroke = '#6366f1';
-              strokeWidth = 1.8;
-              marker = 'url(#arrow-active)';
+              strokeWidth = 2.0;
+              if (rel === 'IMPORTS') {
+                stroke = '#818cf8';
+                marker = 'url(#arrow-active)';
+              }
             }
 
             return (
-              <path
-                key={`edge-${i}`}
-                d={pathD}
-                fill="none"
-                stroke={stroke}
-                strokeWidth={strokeWidth}
-                strokeDasharray={edge.relation === 'EXTENDS' ? '3 3' : undefined}
-                markerEnd={marker}
-                opacity={isImpactEdge || isHighlighted ? 1 : 0.4}
-              />
+              <g key={`edge-${i}`}>
+                <path
+                  d={pathD}
+                  fill="none"
+                  stroke={stroke}
+                  strokeWidth={strokeWidth}
+                  strokeDasharray={dashArray}
+                  markerEnd={marker}
+                  opacity={isImpactEdge || isHighlighted ? 1 : 0.45}
+                />
+              </g>
             );
           })}
 
@@ -413,9 +468,9 @@ export const ArchitectureGraph: React.FC<ArchitectureGraphProps> = ({
         </svg>
       </div>
 
-      {/* Footer Legend */}
-      <div className="h-7 px-3 border-t border-[var(--border-hairline)] bg-[#0d0e13] flex items-center justify-between text-[10px] font-mono text-zinc-500 select-none">
-        <div className="flex items-center gap-3">
+      {/* Footer Legend: Node Tiers + Edge Relations */}
+      <div className="h-7 px-3 border-t border-[var(--border-hairline)] bg-[#0d0e13] flex items-center justify-between text-[10px] font-mono text-zinc-500 select-none overflow-x-auto">
+        <div className="flex items-center gap-3 shrink-0">
           <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm bg-emerald-500" /> Controller</div>
           <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm bg-indigo-500" /> Service</div>
           <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm bg-amber-500" /> Repository</div>
@@ -423,13 +478,29 @@ export const ArchitectureGraph: React.FC<ArchitectureGraphProps> = ({
           <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm bg-rose-500" /> Test</div>
         </div>
 
+        {/* Edge Types Key */}
+        <div className="hidden lg:flex items-center gap-3 border-l border-zinc-800/80 pl-3 shrink-0">
+          <div className="flex items-center gap-1.5 text-zinc-400">
+            <span className="w-3.5 h-[2px] bg-slate-400 inline-block" /> Imports
+          </div>
+          <div className="flex items-center gap-1.5 text-emerald-400">
+            <span className="w-3.5 border-t border-dashed border-emerald-400 inline-block" /> Extends
+          </div>
+          <div className="flex items-center gap-1.5 text-amber-400">
+            <span className="w-3.5 border-t border-dotted border-amber-400 inline-block" /> Calls
+          </div>
+          <div className="flex items-center gap-1.5 text-rose-400 font-semibold">
+            <span className="w-3.5 h-[2px] bg-rose-500 inline-block" /> Blast Reach
+          </div>
+        </div>
+
         {blastRadius && (
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 shrink-0">
             <span className="text-rose-400">
-              Direct Reach: {blastRadius.direct_affected_files.length}
+              Direct: {blastRadius.direct_affected_files.length}
             </span>
             <span className="text-amber-400">
-              Indirect Reach: {blastRadius.indirect_affected_files.length}
+              Indirect: {blastRadius.indirect_affected_files.length}
             </span>
           </div>
         )}

@@ -50,12 +50,12 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
   const [loading, setLoading] = useState(false);
 
   const suggestedPrompts = [
-    "How does authentication work?",
-    "Why was Redis introduced?",
-    "What changed in the payment module?",
+    "Why did payment timeouts occur and how were they fixed?",
+    "Why was Redis introduced and what does it cache?",
+    "What would be affected if paymentService.ts is modified?",
+    "How does authentication token validation flow across tiers?",
     "Which components depend on UserService?",
-    "What may be affected if I modify UserService.ts?",
-    "Show me the most important architectural changes."
+    "What historical bug fixes touched the checkout subsystem?"
   ];
 
   const handleSend = async (questionToSend?: string) => {

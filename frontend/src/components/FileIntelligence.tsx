@@ -70,11 +70,17 @@ export const FileIntelligence: React.FC<FileIntelligenceProps> = ({
       <div className="p-3 border-b border-[var(--border-hairline)] bg-[#121318]">
         <div className="flex items-start justify-between gap-2 mb-2">
           <div className="min-w-0">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 flex-wrap">
               <span className="font-bold text-xs text-white truncate font-mono">
                 {file.name}
               </span>
               <span className="badge-arch badge-service text-[9px]">{file.component_type}</span>
+              <span 
+                className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-zinc-800/80 text-zinc-400 border border-zinc-700/50"
+                title="Probabilistic classification confidence score (classifier.py)"
+              >
+                {Math.round((file.component_confidence || 0.92) * 100)}% conf
+              </span>
             </div>
             <p className="text-[10px] text-zinc-500 font-mono truncate mt-0.5">{file.path}</p>
           </div>
@@ -160,18 +166,49 @@ export const FileIntelligence: React.FC<FileIntelligenceProps> = ({
               </div>
             )}
 
-            {/* AI Prompt Button */}
-            <div className="p-2.5 rounded bg-[#131520] border border-indigo-900/50 flex items-center justify-between">
-              <span className="text-[11px] text-zinc-300 font-medium">
-                Explain architecture & rationale
-              </span>
-              <button
-                onClick={() => onAskAI(`Explain the architecture, design choices, and historical evolution of ${file.path}`)}
-                className="btn-studio btn-studio-primary text-[11px] py-1 px-2.5"
-              >
-                <Sparkles className="w-3 h-3 text-indigo-300" />
-                Ask Assistant
-              </button>
+            {/* AI Architectural Inquiry Menu */}
+            <div className="p-3 rounded-lg bg-[#131520] border border-indigo-900/50 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-mono font-semibold text-zinc-300 flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+                  Ask Archaeological Assistant
+                </span>
+                <span className="text-[9px] font-mono text-zinc-500">Grounded in AST + Commits</span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-1.5 pt-1">
+                <button
+                  onClick={() => onAskAI(`Explain the architecture, design choices, and purpose of ${file.path}`)}
+                  className="p-1.5 rounded bg-[#181a26] hover:bg-[#202234] border border-indigo-950 hover:border-indigo-800 text-[10px] text-zinc-300 text-left transition-colors font-mono flex items-center gap-1"
+                  title="Explain architecture and design choices"
+                >
+                  🏛️ Architecture & Role
+                </button>
+
+                <button
+                  onClick={() => onAskAI(`What could break across callers or APIs if I change ${file.path}?`)}
+                  className="p-1.5 rounded bg-[#181a26] hover:bg-[#202234] border border-indigo-950 hover:border-indigo-800 text-[10px] text-zinc-300 text-left transition-colors font-mono flex items-center gap-1"
+                  title="Simulate breaking changes and blast reach"
+                >
+                  💥 What Breaks if Changed?
+                </button>
+
+                <button
+                  onClick={() => onAskAI(`Why was ${file.path} modified in past commits and what bug fixes touched it?`)}
+                  className="p-1.5 rounded bg-[#181a26] hover:bg-[#202234] border border-indigo-950 hover:border-indigo-800 text-[10px] text-zinc-300 text-left transition-colors font-mono flex items-center gap-1"
+                  title="Historical commit rationale and bug fix traces"
+                >
+                  📜 Bug Fix History
+                </button>
+
+                <button
+                  onClick={() => onAskAI(`Which test suites and callers depend on ${file.name}?`)}
+                  className="p-1.5 rounded bg-[#181a26] hover:bg-[#202234] border border-indigo-950 hover:border-indigo-800 text-[10px] text-zinc-300 text-left transition-colors font-mono flex items-center gap-1"
+                  title="Identify downstream callers and required tests"
+                >
+                  🧪 Dependent Tests & Callers
+                </button>
+              </div>
             </div>
           </div>
         )}

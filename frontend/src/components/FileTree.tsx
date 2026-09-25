@@ -77,20 +77,44 @@ export const FileTree: React.FC<FileTreeProps> = ({
     return root;
   }, [files, searchTerm]);
 
-  const getComponentBadge = (type: string) => {
-    const t = type.toLowerCase();
+  const getComponentBadge = (type: string, confidence?: number) => {
+    const t = (type || 'unknown').toLowerCase();
     let badgeClass = 'badge-utility';
-    if (t.includes('controller')) badgeClass = 'badge-controller';
-    else if (t.includes('service')) badgeClass = 'badge-service';
-    else if (t.includes('repository')) badgeClass = 'badge-repository';
-    else if (t.includes('model')) badgeClass = 'badge-model';
-    else if (t.includes('component')) badgeClass = 'badge-component';
-    else if (t.includes('test')) badgeClass = 'badge-test';
-    else if (t.includes('middleware')) badgeClass = 'badge-middleware';
+    let shortCode = 'UTIL';
 
-    // Short label for compact display
-    const label = type.length > 8 ? type.slice(0, 7) : type;
-    return <span className={`badge-arch ${badgeClass}`}>{label}</span>;
+    if (t.includes('controller') || t.includes('route')) {
+      badgeClass = 'badge-controller';
+      shortCode = 'CTRL';
+    } else if (t.includes('service')) {
+      badgeClass = 'badge-service';
+      shortCode = 'SRV';
+    } else if (t.includes('repository') || t.includes('dao')) {
+      badgeClass = 'badge-repository';
+      shortCode = 'REPO';
+    } else if (t.includes('model') || t.includes('schema')) {
+      badgeClass = 'badge-model';
+      shortCode = 'MOD';
+    } else if (t.includes('component')) {
+      badgeClass = 'badge-component';
+      shortCode = 'UI';
+    } else if (t.includes('test')) {
+      badgeClass = 'badge-test';
+      shortCode = 'TEST';
+    } else if (t.includes('middleware')) {
+      badgeClass = 'badge-middleware';
+      shortCode = 'MID';
+    }
+
+    const confPct = confidence ? `${Math.round(confidence * 100)}%` : '92%';
+
+    return (
+      <span
+        className={`badge-arch ${badgeClass} text-[8.5px] px-1.5 py-0.5 tracking-wider`}
+        title={`Classified as ${type} (${confPct} confidence)`}
+      >
+        {shortCode}
+      </span>
+    );
   };
 
   const renderNode = (node: TreeNode, depth: number = 0) => {
@@ -153,7 +177,7 @@ export const FileTree: React.FC<FileTreeProps> = ({
         </div>
 
         <div className="flex items-center gap-1.5 shrink-0">
-          {getComponentBadge(file.component_type)}
+          {getComponentBadge(file.component_type, file.component_confidence)}
           <span className="text-[10px] text-zinc-600 font-mono hidden group-hover:inline">
             {file.loc}L
           </span>

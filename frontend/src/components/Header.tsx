@@ -207,6 +207,30 @@ export const Header: React.FC<HeaderProps> = ({
                   className="w-full bg-[#0a0b0e] border border-zinc-800 rounded px-3 py-2 text-xs font-mono text-zinc-200 focus:outline-none focus:border-indigo-500"
                   required
                 />
+                
+                {/* 1-Click Benchmark Presets */}
+                <div className="mt-2.5 space-y-1.5">
+                  <span className="text-[10px] text-zinc-500 font-mono uppercase tracking-wider block">
+                    1-Click Real-World Repository Presets:
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {[
+                      { name: 'expressjs/express', url: 'https://github.com/expressjs/express' },
+                      { name: 'fastapi/fastapi', url: 'https://github.com/fastapi/fastapi' },
+                      { name: 'pallets/flask', url: 'https://github.com/pallets/flask' },
+                      { name: 'CodeArchaeologist (Self)', url: 'https://github.com/PanatiNitesh/CodeArchaeologist' }
+                    ].map(preset => (
+                      <button
+                        key={preset.name}
+                        type="button"
+                        onClick={() => setInputUrl(preset.url)}
+                        className="px-2 py-1 rounded bg-[#161722] hover:bg-[#202235] border border-zinc-800 hover:border-indigo-700 text-[10.5px] font-mono text-zinc-300 transition-colors flex items-center gap-1"
+                      >
+                        ⚡ {preset.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
 
               <div className="flex items-center justify-end gap-2 pt-2 border-t border-[var(--border-hairline)]">
