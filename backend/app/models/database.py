@@ -12,13 +12,20 @@ class DatabaseManager:
         self.init_db()
 
     def get_connection(self):
-        conn = sqlite3.connect(self.db_path, timeout=30.0)
+        conn = sqlite3.connect(self.db_path, timeout=60.0)
         conn.row_factory = sqlite3.Row
+        # Enable WAL mode and concurrency pragmas to avoid 'database is locked' errors
+        conn.execute("PRAGMA journal_mode = WAL;")
+        conn.execute("PRAGMA busy_timeout = 60000;")
+        conn.execute("PRAGMA synchronous = NORMAL;")
+        conn.execute("PRAGMA foreign_keys = ON;")
         return conn
 
     def init_db(self):
         with self.get_connection() as conn:
             cursor = conn.cursor()
+            cursor.execute("PRAGMA journal_mode = WAL;")
+            cursor.execute("PRAGMA busy_timeout = 60000;")
             cursor.executescript("""
             CREATE TABLE IF NOT EXISTS repositories (
                 id TEXT PRIMARY KEY,

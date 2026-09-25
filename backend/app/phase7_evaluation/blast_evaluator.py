@@ -24,13 +24,12 @@ class BlastRadiusEvaluator:
         ]
 
         if not multi_file_commits:
-            # Synthetic benchmark if repo has single commits
             return EvaluationMetrics(
-                precision=0.88,
-                recall=0.84,
-                f1_score=0.86,
+                precision=0.0,
+                recall=0.0,
+                f1_score=0.0,
                 tested_samples=0,
-                details={"note": "No multi-file commits in sample, simulated baseline."}
+                details={"note": "No multi-file commits found in repository history to evaluate co-change blast radius."}
             )
 
         precisions = []
@@ -65,7 +64,7 @@ class BlastRadiusEvaluator:
 
             p = tp / max(1, tp + fp) if (tp + fp) > 0 else 0.0
             r = tp / max(1, tp + fn) if (tp + fn) > 0 else 0.0
-            f1 = (2 * p * r) / max(1e-6, p + r)
+            f1 = (2 * p * r) / (p + r) if (p + r) > 0 else 0.0
 
             precisions.append(p)
             recalls.append(r)
@@ -83,14 +82,14 @@ class BlastRadiusEvaluator:
                 "f1": round(f1, 3)
             })
 
-        avg_p = sum(precisions) / max(1, len(precisions))
-        avg_r = sum(recalls) / max(1, len(recalls))
-        avg_f1 = (2 * avg_p * avg_r) / max(1e-6, avg_p + avg_r)
+        avg_p = sum(precisions) / max(1, len(precisions)) if precisions else 0.0
+        avg_r = sum(recalls) / max(1, len(recalls)) if recalls else 0.0
+        avg_f1 = (2 * avg_p * avg_r) / (avg_p + avg_r) if (avg_p + avg_r) > 0 else 0.0
 
         return EvaluationMetrics(
-            precision=round(max(0.60, avg_p), 3),
-            recall=round(max(0.65, avg_r), 3),
-            f1_score=round(max(0.62, avg_f1), 3),
+            precision=round(avg_p, 3),
+            recall=round(avg_r, 3),
+            f1_score=round(avg_f1, 3),
             tested_samples=len(precisions),
             details={
                 "evaluated_commits": len(precisions),

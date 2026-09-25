@@ -55,13 +55,59 @@ class EvidenceRAGEngine:
         else:
             answer_text = self._synthesize_local_evidence_answer(question, context, evidence_list)
 
+        # Dynamically compute confidence score from query-evidence relevance and retrieval scores
+        dyn_confidence = self._calculate_dynamic_confidence(question, context, evidence_list)
+
         return RAGAnswerResponse(
             question=question,
             answer=answer_text,
             evidence=evidence_list,
-            confidence_score=0.92 if evidence_list else 0.40,
+            confidence_score=dyn_confidence,
             retrieval_sources=context.get("counts", {})
         )
+
+    def _calculate_dynamic_confidence(self, question: str, context: Dict[str, Any], evidence: List[EvidenceItem]) -> float:
+        if not evidence:
+            return 0.15
+
+        import re
+        q_tokens = set(re.findall(r'[a-zA-Z0-9_$]+', question.lower()))
+        stop_words = {"why", "how", "what", "where", "when", "the", "was", "for", "with", "this", "that", "from", "into", "and", "are", "does"}
+        meaningful_tokens = {t for t in q_tokens if len(t) > 2 and t not in stop_words}
+
+        if not meaningful_tokens:
+            return 0.50
+
+        # 1. Term coverage in retrieved evidence
+        matched_tokens = set()
+        for ev in evidence:
+            text = f"{ev.file_path} {ev.snippet} {ev.commit_message or ''}".lower()
+            for t in meaningful_tokens:
+                if t in text:
+                    matched_tokens.add(t)
+
+        term_coverage = len(matched_tokens) / max(1, len(meaningful_tokens))
+
+        # 2. Retrieval quality from underlying RRF / dense / BM25 search
+        score_samples = []
+        for cat in ["code", "commits", "docs"]:
+            for item in context.get(cat, []):
+                meta = item.get("retrieval_metadata", {})
+                if "dense_cosine_sim" in meta:
+                    score_samples.append(max(0.0, meta["dense_cosine_sim"]))
+                elif "score" in item:
+                    val = item["score"]
+                    score_samples.append(min(1.0, val / 100.0 if val > 1.0 else val))
+
+        avg_search_score = sum(score_samples) / max(1, len(score_samples)) if score_samples else 0.5
+
+        # 3. Source diversity bonus: having both code and commit history anchors increases grounding
+        has_code = len(context.get("code", [])) > 0
+        has_commits = len(context.get("commits", [])) > 0
+        diversity_bonus = 0.15 if (has_code and has_commits) else 0.05
+
+        raw_confidence = (term_coverage * 0.55) + (avg_search_score * 0.30) + diversity_bonus
+        return round(float(min(0.98, max(0.15, raw_confidence))), 2)
 
     def _call_gemini_llm(self, question: str, context: Dict[str, Any], evidence: List[EvidenceItem], api_key: str) -> str:
         prompt = f"""
@@ -144,7 +190,8 @@ class EvidenceRAGEngine:
     def _synthesize_local_evidence_answer(self, question: str, context: Dict[str, Any], evidence: List[EvidenceItem]) -> str:
         """
         High-precision deterministic synthesis engine that constructs structured answers
-        with verifiable code and commit evidence citations.
+        with verifiable code, signatures, and commit evidence citations.
+        Provides rich architectural analysis even when running 100% offline without cloud LLM keys.
         """
         code_items = context.get("code", [])
         commit_items = context.get("commits", [])
@@ -153,37 +200,78 @@ class EvidenceRAGEngine:
         if not code_items and not commit_items:
             return (
                 f"### Codebase Archaeological Inspection\n\n"
+                f"> ℹ️ **Offline Extractive Synthesis Mode** (Local AST & Git Archaeology)\n\n"
                 f"No direct code references or Git milestones matched **'{question}'** in this repository.\n"
-                f"Try querying specific architectural components, service names, or historical topics."
+                f"Try querying specific architectural components, service names, file names, or historical topics."
             )
 
         parts = []
-        parts.append(f"### Architecture & Code Understanding for *'{question}'*\n")
+        parts.append(f"### Architectural Analysis for *'{question}'*\n")
+        parts.append(
+            f"> ℹ️ **Offline Extractive Mode:** Deterministic structural synthesis powered by local AST "
+            f"traversal, dependency graphs, and Git archaeology. (Cloud LLM keys are optional).\n\n"
+        )
 
+        # 1. Structural Code Analysis
         if code_items:
             primary_file = code_items[0].get("metadata", {}).get("path", "module")
             comp_type = code_items[0].get("metadata", {}).get("component_type", "Component")
+            parts.append(f"#### 1. Core Architectural Implementation\n")
             parts.append(
-                f"Based on static AST analysis and the dependency graph, the core implementation resides in **`{primary_file}`** ({comp_type}).\n\n"
+                f"Primary architectural locus: **`{primary_file}`** (Categorized as `{comp_type}`).\n\n"
             )
-            for item in code_items[:3]:
+
+            for idx, item in enumerate(code_items[:4], 1):
                 meta = item.get("metadata", {})
-                parts.append(f"- **`{meta.get('path')}`** (Lines {meta.get('line_start')}-{meta.get('line_end')}): Implements {item.get('title')}.\n")
+                title = item.get("title", "Symbol")
+                path = meta.get("path", "file")
+                lines = f"L{meta.get('line_start', '?')}-L{meta.get('line_end', '?')}"
+                content = item.get("content", "").strip()
 
+                parts.append(f"**{idx}. `{title}`** in [`{path}`]({lines})\n")
+                
+                # Show signature or code preview if present
+                if content:
+                    lines_preview = [l for l in content.splitlines() if l.strip()][:6]
+                    code_snippet = "\n".join(lines_preview)
+                    parts.append(f"```\n{code_snippet}\n```\n")
+
+        # 2. Historical Git Evolution
         if commit_items:
-            parts.append(f"\n### Historical Evolution & Git Archaeology\n")
-            parts.append(f"The commit history reveals how this capability was introduced and refactored over time:\n")
-            for c in commit_items[:3]:
+            parts.append(f"#### 2. Historical Evolution & Git Rationale\n")
+            parts.append(
+                f"Historical commit traces illuminate how and why this subsystem evolved:\n\n"
+            )
+            for c in commit_items[:4]:
                 meta = c.get("metadata", {})
+                chash = meta.get("commit_hash", "")[:8]
+                date = meta.get("date", "Unknown date")
+                author = meta.get("author", "Contributor")
+                category = meta.get("category", "REFACTOR")
+                title = c.get("title", "")
+                content = c.get("content", "").strip()
+
                 parts.append(
-                    f"- Commit **`{meta.get('commit_hash')}`** ({meta.get('date', 'Unknown')}) by *{meta.get('author', 'Dev')}*: "
-                    f"_{c.get('title')}_ [{meta.get('category', 'CHANGE')}].\n"
+                    f"- **`[{category}]`** commit [`{chash}`] by *{author}* on {date}\n"
+                    f"  **Summary:** _{title}_\n"
                 )
+                if content and content != title:
+                    clean_detail = content.replace(title, "").strip()
+                    if clean_detail:
+                        first_line = clean_detail.splitlines()[0][:120]
+                        parts.append(f"  > _{first_line}_\n")
 
+        # 3. Documentation Context
         if doc_items:
-            parts.append(f"\n### Documentation Highlights\n")
+            parts.append(f"\n#### 3. Relevant Documentation Context\n")
             for d in doc_items[:2]:
-                parts.append(f"> {d.get('content', '')[:180]}...\n")
+                text = d.get("content", "").strip()
+                if text:
+                    parts.append(f"> {text[:220]}...\n\n")
 
-        parts.append(f"\n> **Evidence Verification:** Every point above is anchored directly to source code lines and Git commit hashes. Inspect the interactive evidence badges below to verify.")
+        parts.append(
+            f"\n---\n"
+            f"**Evidence Verification:** Every statement above is directly anchored to AST source coordinates "
+            f"and immutable Git commits. Click any evidence badge below to inspect the verified source."
+        )
         return "".join(parts)

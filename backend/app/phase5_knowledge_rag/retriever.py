@@ -6,7 +6,10 @@ logger = logging.getLogger(__name__)
 
 class HybridRetriever:
     """
-    Combines semantic vector search, graph relations, and Git commit archaeology.
+    True Multi-Channel Hybrid Retriever:
+    Fuses Dense Neural Embeddings (SentenceTransformers all-MiniLM-L6-v2) and
+    Lexical Okapi BM25 keyword matching via Reciprocal Rank Fusion (RRF, k=60).
+    Retrieves and ranks cross-modal context: AST symbols, file source, git commits, and docs.
     """
 
     def __init__(self, vector_store: LocalVectorStore):
@@ -14,7 +17,10 @@ class HybridRetriever:
 
     def retrieve_context(self, question: str, max_code: int = 4, max_commits: int = 3, max_docs: int = 2) -> Dict[str, Any]:
         """
-        Retrieves matching code chunks, historical commits, and documentation snippets.
+        Executes hybrid dense + BM25 retrieval with Reciprocal Rank Fusion across:
+        1. Code structures (functions, classes, files)
+        2. Historical git commits & architectural milestones
+        3. Project documentation & README files
         """
         # 1. Search code (functions, classes, files)
         code_matches = self.vector_store.search(question, top_k=max_code * 2)

@@ -11,11 +11,11 @@ class EmbeddingEngine:
     2. High-performance Scikit-learn TF-IDF LSA semantic vectorizer fallback (instant, zero download)
     """
 
-    def __init__(self, use_neural: bool = False):
+    def __init__(self, use_neural: bool = True):
         self.use_neural = use_neural
         self.model = None
         self.vectorizer = None
-        self.dim = 128
+        self.dim = 384 if use_neural else 128
 
         if use_neural:
             try:

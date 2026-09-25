@@ -110,6 +110,7 @@ class CommitRecord(BaseModel):
     changed_files: List[str]
     added_lines: int
     deleted_lines: int
+    file_statuses: Dict[str, str] = {}
 
 class TimelineMilestone(BaseModel):
     year: int

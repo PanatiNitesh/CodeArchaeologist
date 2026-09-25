@@ -9,40 +9,44 @@ class ComponentClassifier:
     Classifies files into Controller, Service, Repository, Model, Component, Utility, Test, Config, Middleware.
     """
 
+    LANG_EXT = r'(?:\.[jt]sx?|\.py|\.go|\.java|\.rs)?$'
+
     PATTERNS = [
         (ComponentType.TEST, [
-            r'(\.test|\.spec|_test|_spec)\.[jt]sx?$',
+            r'(\.test|\.spec|_test|_spec)\.[a-zA-Z0-9]+$',
+            r'/test_[a-zA-Z0-9_]+\.py$',
             r'/__tests__/',
             r'/tests?/'
         ]),
         (ComponentType.CONTROLLER, [
-            r'controller\.[jt]sx?$',
+            r'controller' + LANG_EXT,
             r'/controllers?/',
             r'/routes?/',
+            r'/endpoints?/',
             r'/api/'
         ]),
         (ComponentType.SERVICE, [
-            r'service\.[jt]sx?$',
+            r'service' + LANG_EXT,
             r'/services?/',
             r'/usecases?/'
         ]),
         (ComponentType.REPOSITORY, [
-            r'repository\.[jt]sx?$',
+            r'repository' + LANG_EXT,
             r'/repositor(y|ies)/',
             r'/dao/',
             r'/data-access/'
         ]),
         (ComponentType.MODEL, [
-            r'model\.[jt]sx?$',
-            r'schema\.[jt]sx?$',
-            r'entity\.[jt]sx?$',
+            r'model' + LANG_EXT,
+            r'schema' + LANG_EXT,
+            r'entity' + LANG_EXT,
             r'/models?/',
             r'/entities?/',
             r'/schemas?/'
         ]),
         (ComponentType.MIDDLEWARE, [
-            r'middleware\.[jt]sx?$',
-            r'interceptor\.[jt]sx?$',
+            r'middleware' + LANG_EXT,
+            r'interceptor' + LANG_EXT,
             r'/middlewares?/',
             r'/guards?/'
         ]),
@@ -55,17 +59,21 @@ class ComponentClassifier:
             r'\.jsx$'
         ]),
         (ComponentType.CONFIGURATION, [
-            r'config\.[jt]sx?$',
+            r'config' + LANG_EXT,
             r'/config/',
+            r'settings\.py$',
             r'tsconfig.*\.json$',
             r'package\.json$',
+            r'requirements\.txt$',
+            r'go\.mod$',
+            r'Cargo\.toml$',
             r'\.env',
             r'webpack\.',
             r'vite\.config'
         ]),
         (ComponentType.UTILITY, [
-            r'util(s)?\.[jt]sx?$',
-            r'helper(s)?\.[jt]sx?$',
+            r'util(s)?' + LANG_EXT,
+            r'helper(s)?' + LANG_EXT,
             r'/utils?/',
             r'/helpers?/',
             r'/lib/',
@@ -88,12 +96,12 @@ class ComponentClassifier:
         classes = [c.get("name", "").lower() for c in parsed_info.get("classes", [])]
 
         # Test detection
-        if any(c in calls for c in ["describe", "it", "test", "expect", "assert"]):
+        if any(c in calls for c in ["describe", "it", "test", "expect", "assert"]) or any("pytest" in i or "unittest" in i for i in imports):
             return ComponentType.TEST, 0.98
 
         # Controller / Route detection
-        if any("router" in imp or "express" in imp or "fastify" in imp or "koa" in imp for imp in imports):
-            if any("get" in calls or "post" in calls or "put" in calls or "delete" in calls):
+        if any(f in imp for imp in imports for f in ["router", "express", "fastify", "koa", "fastapi", "flask", "django"]):
+            if any(verb in calls for verb in ["get", "post", "put", "delete", "route"]):
                 return ComponentType.CONTROLLER, 0.88
 
         # Middleware detection
@@ -105,12 +113,12 @@ class ComponentClassifier:
             return ComponentType.COMPONENT, 0.90
 
         # Repository / DB layer detection
-        db_indicators = {"prisma", "typeorm", "mongoose", "sequelize", "knex", "pg", "sql", "db"}
+        db_indicators = {"prisma", "typeorm", "mongoose", "sequelize", "knex", "pg", "sql", "db", "sqlalchemy", "peewee", "tortoise"}
         if any(any(dbi in imp for dbi in db_indicators) for imp in imports) or any(dbi in c.lower() for dbi in db_indicators for c in calls):
             return ComponentType.REPOSITORY, 0.82
 
         # Model detection
-        if any(c.endswith("model") or c.endswith("schema") or c.endswith("entity") for c in classes):
+        if any(c.endswith("model") or c.endswith("schema") or c.endswith("entity") or c.endswith("dto") for c in classes) or any("basemodel" in c for c in classes):
             return ComponentType.MODEL, 0.85
 
         # Service detection

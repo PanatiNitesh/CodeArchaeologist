@@ -127,18 +127,51 @@ In **CodeArchaeologist**, the LLM is **not** making up architectural assumptions
 
 ---
 
+---
+
+## 🤖 Application of IBM Bob 2.0 & Autonomous Orchestration
+
+**CodeArchaeologist** is built with and orchestrated by **IBM Bob 2.0**, leveraging Bob's autonomous agent framework, custom skills architecture, and lifecycle hooks for legacy code intelligence:
+
+```
+                      ┌─────────────────────────────────┐
+                      │           IBM BOB 2.0           │
+                      │      Autonomous Orchestrator    │
+                      └──────────────┬──────────────────┘
+                                     │
+         ┌───────────────────────────┼───────────────────────────┐
+         │                           │                           │
+         ▼                           ▼                           ▼
+┌──────────────────┐       ┌──────────────────┐        ┌──────────────────┐
+│  .bob/config.json│       │  .bob/skills/    │        │  .bob/hooks.json │
+│  Agent Persona & │       │  • archaeologist │        │  • pre_refactor  │
+│  Orchestration   │       │  • blast_guard   │        │  • pr_impact_pred│
+└──────────────────┘       └──────────────────┘        └──────────────────┘
+```
+
+### 1. Dedicated IBM Bob 2.0 Skills (`.bob/skills/`)
+- **`legacy-code-archaeologist`** ([`SKILL.md`](file:///.bob/skills/legacy-code-archaeologist/SKILL.md)): Enables IBM Bob 2.0 to navigate multi-year git histories, follow file renames (`-M`), disambiguate call graphs, and recover lost design decisions with verifiable citations.
+- **`blast-radius-guard`** ([`SKILL.md`](file:///.bob/skills/blast-radius-guard/SKILL.md)): Automates pre-refactoring risk simulation, identifying cascading dependents, impacted ingress API routes, and candidate test suites before code modification.
+
+### 2. Autonomous Lifecycle Automation Hooks (`.bob/hooks.json`)
+- **`pre-refactor-blast-check`**: Simulates ripple effects prior to modifying critical core services or schema entities.
+- **`on-pr-review-impact-prediction`**: Runs the trained change-impact predictor on pull request git diffs to forecast co-change regressions.
+- **`evidence-grounded-qa`**: Enforces strict evidence grounding (file lines + commit hashes + dates) on AI chat responses.
+
+---
+
 ## 🏗️ Architecture: The 8 Phases
 
 | Phase | Title | Module | Description |
 |---|---|---|---|
-| **Phase 1** | **Repository Ingestion** | `backend/app/phase1_ingestion/` | Clones/loads repos, filters non-code directories (`node_modules`, `dist`, `coverage`), indexes `.js`, `.ts`, `.jsx`, `.tsx`, `.json`, `.md`, and creates relational DB storage. |
-| **Phase 2** | **Code Understanding (AST)** | `backend/app/phase2_ast/` | Extracts functions, classes, imports, exports, and call expressions into semantic symbols. |
-| **Phase 3** | **Software & Call Graph** | `backend/app/phase3_graph/` | Builds NetworkX directed dependency graph (`IMPORTS`, `EXTENDS`, `CALLS`) and classifies components into Controller, Service, Repository, Model, Test, Middleware, Utility. |
-| **Phase 4** | **Software Archaeology** | `backend/app/phase4_archaeology/` | Mines Git commit history, classifies commit categories (`FEATURE`, `BUG_FIX`, `REFACTOR`, `SECURITY`, `PERFORMANCE`), constructs chronological eras (2022–2026), and traces per-file lifecycle. |
-| **Phase 5** | **Knowledge Layer & RAG** | `backend/app/phase5_knowledge_rag/` | Dense vector embeddings store (functions, classes, commits, docs) and Evidence-based RAG engine with verifiable file & commit citations. |
-| **Phase 6** | **Blast Radius & ML Prediction** | `backend/app/phase6_blast_radius/` | Cascading blast calculator (Direct vs Indirect dependents, affected APIs & Tests, Composite Risk Score) + Calibrated ML Change-Impact Predictor. |
-| **Phase 7** | **Evaluation Engine** | `backend/app/phase7_evaluation/` | Precision, Recall, and F1 benchmarks for architecture dependency discovery and empirical historical multi-file commit backtesting. |
-| **Phase 8** | **Developer Studio UI** | `frontend/` | High-density Linear/Vercel standard studio interface featuring interactive topology graph, file tree, evolution timeline, file intelligence inspector, and AI chat drawer. |
+| **Phase 1** | **Repository Ingestion** | `backend/app/phase1_ingestion/` | Multi-language extractor supporting `.js`, `.ts`, `.jsx`, `.tsx`, `.py`, `.java`, `.go`, `.rs`, `.json`, `.md`. High-performance SQLite database with WAL mode and connection pooling. |
+| **Phase 2** | **Code Understanding & Dual AST** | `backend/app/phase2_ast/` | Dual engine: Native Python parse-tree AST (`ast.parse`) for Python + robust syntactic tokenizer for TS/JS with generics (`<T extends Bar>`), decorators (`@Injectable`), destructured parameters, and conditional exports. |
+| **Phase 3** | **Software & Call Graph** | `backend/app/phase3_graph/` | NetworkX directed dependency graph with `tsconfig.json` path alias resolution (`@app/*`, `@shared/*`, `~/*`) and disambiguated call graph resolving symbol collisions via explicit import sources. |
+| **Phase 4** | **Software Archaeology** | `backend/app/phase4_archaeology/` | Mines Git commit history with rename detection (`-M`), directory-bounded path matching, commit intent classification (`FEATURE`, `BUG_FIX`, `REFACTOR`, etc.), and per-file lifecycle profiling. |
+| **Phase 5** | **Hybrid Knowledge Layer & RAG** | `backend/app/phase5_knowledge_rag/` | True Multi-Channel Hybrid RAG: Fuses Dense Neural Embeddings (`all-MiniLM-L6-v2`) and Lexical Okapi BM25 keyword matching via Reciprocal Rank Fusion (RRF, $k=60$) with verifiable citations. |
+| **Phase 6** | **Blast Radius & ML Prediction** | `backend/app/phase6_blast_radius/` | Calibrated repository-size normalized blast calculator (Direct/Indirect dependents, affected APIs & Tests) + LogisticRegression Change-Impact Predictor with empirical feature coefficients (`model.coef_`). |
+| **Phase 7** | **Scientific Evaluation Suite** | `backend/app/phase7_evaluation/` | Honest Precision, Recall, and F1 benchmarks for architecture dependency discovery and empirical historical multi-file commit backtesting (zero artificial floors or fabricated baselines). |
+| **Phase 8** | **Developer Studio UI** | `frontend/` | High-density studio interface with interactive topology graph, file evolution timeline, file intelligence cards, blast radius simulator with feature weights, and AI evidence assistant. |
 
 ---
 
@@ -207,10 +240,28 @@ Every evidence item includes clickable anchors to navigate directly to the sourc
 ## 📊 Phase 7: Scientific Evaluation Suite
 
 Navigate to **"Evaluation"** in the top navigation bar to inspect live empirical metrics:
-- **Architecture Discovery F1**: Evaluates Precision, Recall, and F1 of inferred dependencies against ground-truth code imports.
+- **Architecture Discovery F1**: Evaluates Precision, Recall, and F1 of inferred dependencies against ground-truth code imports. All metrics are computed strictly without artificial clamping or floors.
 - **Historical Commit Backtesting F1**: Backtests historical multi-file commits:
   $$\text{Given Seed File } A \longrightarrow \text{Predict actual historical co-changes } \{B, C, D\}$$
   Evaluates how accurately the topological and co-change engine predicts files that actually changed together in real commits.
+
+---
+
+## 🧪 Automated Testing & Continuous Integration
+
+CodeArchaeologist includes an automated test suite verifying all 8 pipeline phases, AST parsers, blast radius simulations, and RAG retrieval:
+
+```bash
+# Run full automated test suite with pytest
+pytest -v tests/
+```
+
+- **`tests/test_ast_parser.py`**: Tests Python native AST parse trees and TypeScript generics/decorators.
+- **`tests/test_dependency_graph.py`**: Validates `tsconfig.json` path alias resolution and call graph collision prevention.
+- **`tests/test_blast_radius.py`**: Validates topological reachability, size-normalized risk scores, and ML empirical feature weights.
+- **`tests/test_evaluators.py`**: Verifies un-floored scientific evaluation metrics.
+- **`tests/test_retriever.py`**: Verifies BM25 lexical recall and dense semantic Reciprocal Rank Fusion (RRF).
+- **CI/CD Pipeline**: Automated GitHub Actions workflow defined in [`.github/workflows/ci.yml`](file:///.github/workflows/ci.yml).
 
 ---
 

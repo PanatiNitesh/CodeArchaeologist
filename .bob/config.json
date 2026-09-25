@@ -1,0 +1,31 @@
+{
+  "name": "CodeArchaeologist",
+  "version": "2.0.0",
+  "description": "AI-Powered Software Evolution & Legacy Code Intelligence Engine orchestrated with IBM Bob 2.0",
+  "orchestrator": {
+    "engine": "IBM Bob 2.0",
+    "mode": "agentic-pair-programming",
+    "persona": "Chief Software Archaeologist & Legacy Architecture Specialist",
+    "system_instructions": "Analyze software evolution, extract true AST semantics, calculate structural blast radius, and provide evidence-grounded legacy modernization intelligence."
+  },
+  "skills": [
+    ".bob/skills/legacy-code-archaeologist/SKILL.md",
+    ".bob/skills/blast-radius-guard/SKILL.md"
+  ],
+  "hooks": ".bob/hooks.json",
+  "pipeline_phases": [
+    "Phase 1: Multi-Language Repository Ingestion",
+    "Phase 2: Code Understanding & Dual AST Parsing",
+    "Phase 3: Architecture & Disambiguated Call Graph",
+    "Phase 4: Git History Archaeology & Rename Tracking",
+    "Phase 5: Hybrid Knowledge RAG (Dense MiniLM + BM25 Lexical with RRF)",
+    "Phase 6: Calibrated Blast Radius & ML Change-Impact Prediction",
+    "Phase 7: Empirical Scientific Evaluation Suite",
+    "Phase 8: Developer Intelligence Dashboard"
+  ],
+  "environments": {
+    "backend_url": "http://localhost:8000",
+    "frontend_url": "http://localhost:5173",
+    "database": "backend/code_archaeologist.db"
+  }
+}

@@ -53,17 +53,39 @@ class BlastRadiusCalculator:
                 affected_apis.append(f)
 
         total_impact = len(all_reachable)
-
-        # 4. Compute composite risk score (0 to 100)
-        # Weights: direct (x4), indirect (x2), APIs (x6), tests (x1)
-        raw_risk = (len(direct_nodes) * 5) + (len(indirect_nodes) * 2.5) + (len(affected_apis) * 8)
+        total_repo_files = max(1, len(self.file_metadata))
         
-        # Normalization
-        risk_score = min(100.0, max(5.0, raw_risk))
+        # Count total APIs in repository for exposure normalization
+        total_apis = sum(
+            1 for path, meta in self.file_metadata.items()
+            if meta.get("component_type") == ComponentType.CONTROLLER
+            or "/api/" in path.lower()
+            or "/routes/" in path.lower()
+        )
+        total_apis = max(1, total_apis)
 
-        if risk_score >= 70.0 or len(affected_apis) >= 3:
+        # 4. Multi-factor Architectural Risk Index (0 to 100)
+        # Bounded topological metric combining repository blast breadth, API ingress exposure, and dependency depth.
+        # (Distinct from the ML Change Impact Predictor which computes empirical co-change probabilities).
+        direct_ratio = len(direct_nodes) / total_repo_files
+        transitive_ratio = total_impact / total_repo_files
+        api_ratio = len(affected_apis) / total_apis
+
+        # Factor 1: Relative repository blast breadth (0 - 45 points)
+        breadth_score = (direct_ratio * 30.0) + (transitive_ratio * 15.0)
+
+        # Factor 2: API & egress exposure criticality (0 - 40 points)
+        api_score = (api_ratio * 25.0) + min(15.0, len(affected_apis) * 4.0)
+
+        # Factor 3: Absolute dependency depth & fanout (0 - 15 points)
+        abs_scale = min(15.0, (len(direct_nodes) * 1.5) + (len(indirect_nodes) * 0.5))
+
+        composite_risk_index = breadth_score + api_score + abs_scale
+        risk_score = round(min(100.0, max(5.0, composite_risk_index)), 1)
+
+        if risk_score >= 70.0 or len(affected_apis) >= 3 or transitive_ratio >= 0.40:
             risk_level = RiskLevel.CRITICAL if risk_score >= 85.0 else RiskLevel.HIGH
-        elif risk_score >= 35.0:
+        elif risk_score >= 35.0 or transitive_ratio >= 0.15:
             risk_level = RiskLevel.MEDIUM
         else:
             risk_level = RiskLevel.LOW

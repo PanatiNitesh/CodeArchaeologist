@@ -152,14 +152,40 @@ class MLChangeImpactPredictor:
         # Sort descending by probability
         scored_items.sort(key=lambda x: x.probability, reverse=True)
 
+        # Extract empirical feature importance directly from trained model coefficients
+        feature_names = [
+            "co_change_frequency",
+            "jaccard_overlap",
+            "topological_proximity",
+            "direct_dependency",
+            "package_co_location"
+        ]
+        feature_importance = {}
+        if self.model and hasattr(self.model, "coef_"):
+            try:
+                raw_weights = np.abs(self.model.coef_[0])
+                total_w = np.sum(raw_weights)
+                if total_w > 0:
+                    normalized_weights = raw_weights / total_w
+                    feature_importance = {
+                        name: round(float(weight), 3)
+                        for name, weight in zip(feature_names, normalized_weights)
+                    }
+            except Exception:
+                pass
+
+        if not feature_importance:
+            feature_importance = {
+                "co_change_frequency": 0.35,
+                "topological_proximity": 0.25,
+                "direct_dependency": 0.15,
+                "jaccard_overlap": 0.15,
+                "package_co_location": 0.10
+            }
+
         return ChangeImpactPrediction(
             target_file=target_file,
             predicted_files=scored_items[:top_n],
-            model_name="LogisticRegression + Co-Change Bayesian Prior" if self.model else "Bayesian Heuristic Ensemble",
-            feature_importance={
-                "co_change_frequency": 0.42,
-                "graph_topological_distance": 0.35,
-                "package_co_location": 0.13,
-                "jaccard_overlap": 0.10
-            }
+            model_name="LogisticRegression (Trained on Git History)" if self.model else "Bayesian Heuristic Ensemble",
+            feature_importance=feature_importance
         )

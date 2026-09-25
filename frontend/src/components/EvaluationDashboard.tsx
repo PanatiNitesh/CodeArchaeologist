@@ -37,10 +37,18 @@ export const EvaluationDashboard: React.FC<EvaluationDashboardProps> = ({
                 <h3 className="font-semibold text-sm text-white font-mono">
                   Phase 7 Empirical Benchmarks & Evaluation
                 </h3>
-                <span className="badge-arch badge-controller text-[9px]">Verified</span>
+                {blast_radius_eval.tested_samples > 0 ? (
+                  <span className="badge-arch badge-controller text-[9px]">
+                    Empirically Backtested ({blast_radius_eval.tested_samples} commits)
+                  </span>
+                ) : (
+                  <span className="badge-arch badge-service text-[9px] opacity-75">
+                    Structural Baseline (No Multi-File Commits)
+                  </span>
+                )}
               </div>
               <p className="text-[11px] text-zinc-400 font-sans">
-                Scientific precision/recall validation for Architecture Discovery & Historical Blast Radius Prediction
+                Precision/recall validation for Architecture Discovery & Historical Blast Radius Prediction
               </p>
             </div>
           </div>
@@ -133,8 +141,10 @@ export const EvaluationDashboard: React.FC<EvaluationDashboardProps> = ({
                   </span>
                 </div>
               </div>
-              <div className="text-[10px] text-zinc-600 font-mono">
-                Sample: {blast_radius_eval.tested_samples} historical commits backtested
+              <div className="text-[10px] text-zinc-500 font-mono">
+                {blast_radius_eval.tested_samples > 0
+                  ? `Sample: ${blast_radius_eval.tested_samples} multi-file historical commits backtested`
+                  : "Sample: 0 multi-file commits found in repository history"}
               </div>
             </div>
           </div>

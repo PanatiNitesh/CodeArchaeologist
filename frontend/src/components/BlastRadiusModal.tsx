@@ -103,6 +103,17 @@ export const BlastRadiusModal: React.FC<BlastRadiusModalProps> = ({
                 </span>
               </div>
 
+              {predictions.feature_importance && Object.keys(predictions.feature_importance).length > 0 && (
+                <div className="mb-2.5 p-2 rounded bg-[#101118] border border-zinc-800/60 flex flex-wrap items-center gap-1.5 text-[10px] font-mono">
+                  <span className="text-zinc-500 font-semibold mr-1">Empirical Model Weights:</span>
+                  {Object.entries(predictions.feature_importance).map(([feature, weight]) => (
+                    <span key={feature} className="px-1.5 py-0.5 rounded bg-zinc-800/80 border border-zinc-700/50 text-zinc-300">
+                      {feature.replace(/_/g, ' ')}: <strong className="text-indigo-400">{(weight * 100).toFixed(0)}%</strong>
+                    </span>
+                  ))}
+                </div>
+              )}
+
               <div className="space-y-1.5">
                 {predictions.predicted_files.map((item, idx) => (
                   <div

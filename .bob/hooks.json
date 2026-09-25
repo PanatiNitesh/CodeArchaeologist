@@ -1,0 +1,32 @@
+{
+  "version": "2.0.0",
+  "description": "IBM Bob 2.0 lifecycle automation hooks for CodeArchaeologist",
+  "hooks": [
+    {
+      "name": "pre-refactor-blast-check",
+      "event": "before_file_edit",
+      "action": "execute_skill",
+      "skill": "blast-radius-guard",
+      "description": "Simulates cascading blast radius and warns the developer if the target file impacts >3 API endpoints or has CRITICAL risk."
+    },
+    {
+      "name": "post-ingest-graph-refresh",
+      "event": "after_repo_clone",
+      "action": "run_pipeline_phase",
+      "phase": "Phase 3: Architecture & Call Graph",
+      "description": "Recomputes dependency graph with tsconfig path aliases and disambiguates call edges."
+    },
+    {
+      "name": "on-pr-review-impact-prediction",
+      "event": "pull_request_review",
+      "action": "predict_change_impact",
+      "description": "Runs ML change-impact predictor on all modified files in the git diff to flag co-change regressions."
+    },
+    {
+      "name": "evidence-grounded-qa",
+      "event": "on_chat_query",
+      "action": "hybrid_rag_retrieval",
+      "description": "Invokes Reciprocal Rank Fusion over dense neural vectors and BM25 lexical tokens to retrieve verifiable evidence citations."
+    }
+  ]
+}

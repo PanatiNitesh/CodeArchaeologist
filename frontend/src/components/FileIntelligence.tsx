@@ -312,7 +312,7 @@ export const FileIntelligence: React.FC<FileIntelligenceProps> = ({
                   className="w-full btn-studio btn-studio-primary text-xs py-1.5"
                 >
                   <Flame className="w-3.5 h-3.5 text-amber-300" />
-                  View Calibrated Change Likelihoods
+                  View Predictive Impact & Co-Changes
                 </button>
               </>
             ) : (

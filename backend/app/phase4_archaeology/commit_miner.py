@@ -2,7 +2,7 @@ import git
 import json
 import logging
 from datetime import datetime
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from backend.app.models.schemas import CommitRecord, CommitCategory
 from backend.app.models.database import db
 from backend.app.phase4_archaeology.commit_classifier import CommitClassifier
@@ -13,9 +13,10 @@ class CommitMiner:
     def __init__(self):
         self.classifier = CommitClassifier()
 
-    def mine_commits(self, repo_id: str, repo_path: str, max_commits: int = 500) -> List[CommitRecord]:
+    def mine_commits(self, repo_id: str, repo_path: str, max_commits: Optional[int] = 2500) -> List[CommitRecord]:
         """
-        Extracts historical git commits, changes, and categorizes intent.
+        Extracts historical git commits, changes, rename events, and categorizes intent.
+        Supports configurable max_commits (pass None for exhaustive mining).
         """
         try:
             repo = git.Repo(repo_path)
@@ -25,23 +26,57 @@ class CommitMiner:
 
         commits = []
         try:
-            raw_commits = list(repo.iter_commits('HEAD', max_count=max_commits))
+            iter_args = {'rev': 'HEAD'}
+            if max_commits and max_commits > 0:
+                iter_args['max_count'] = max_commits
+            raw_commits = list(repo.iter_commits(**iter_args))
         except Exception as e:
             logger.warning(f"Could not iterate HEAD commits: {e}")
             return []
 
         for c in raw_commits:
-            # Determine files changed & stats
             changed_files = []
+            file_statuses: Dict[str, str] = {}
             added = 0
             deleted = 0
+
+            # 1. Inspect diff with Git rename tracking (-M)
+            if c.parents:
+                try:
+                    diffs = c.parents[0].diff(c)
+                    for d in diffs:
+                        if d.renamed_file:
+                            file_statuses[d.b_path] = f"renamed_from:{d.a_path}"
+                            file_statuses[d.a_path] = f"renamed_to:{d.b_path}"
+                            if d.b_path not in changed_files:
+                                changed_files.append(d.b_path)
+                            if d.a_path not in changed_files:
+                                changed_files.append(d.a_path)
+                        elif d.new_file:
+                            file_statuses[d.b_path] = "added"
+                            if d.b_path not in changed_files:
+                                changed_files.append(d.b_path)
+                        elif d.deleted_file:
+                            file_statuses[d.a_path] = "deleted"
+                            if d.a_path not in changed_files:
+                                changed_files.append(d.a_path)
+                        else:
+                            p = d.b_path or d.a_path
+                            if p:
+                                file_statuses[p] = "modified"
+                                if p not in changed_files:
+                                    changed_files.append(p)
+                except Exception:
+                    pass
+
+            # 2. Extract commit stats for total line insertions and deletions
             try:
                 stats = c.stats
-                changed_files = list(stats.files.keys())
+                if not changed_files:
+                    changed_files = list(stats.files.keys())
                 added = stats.total.get('insertions', 0)
                 deleted = stats.total.get('deletions', 0)
             except Exception:
-                # If stats fail, fallback to parent diff
                 pass
 
             dt = datetime.fromtimestamp(c.committed_date)
@@ -60,7 +95,8 @@ class CommitMiner:
                 category=category,
                 changed_files=changed_files,
                 added_lines=added,
-                deleted_lines=deleted
+                deleted_lines=deleted,
+                file_statuses=file_statuses
             )
             commits.append(record)
 
@@ -92,7 +128,8 @@ class CommitMiner:
                     json.dumps(c.changed_files)
                 ))
                 for f in c.changed_files:
-                    file_rows.append((repo_id, c.commit_id, f, "modified"))
+                    status = c.file_statuses.get(f, "modified")
+                    file_rows.append((repo_id, c.commit_id, f, status))
 
             cursor.executemany("""
             INSERT OR REPLACE INTO commits (id, repo_id, hash, author, email, date_str, timestamp, message, category, added_lines, deleted_lines, changed_files_json)

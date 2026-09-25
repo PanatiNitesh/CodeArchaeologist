@@ -14,16 +14,19 @@ class CodeEvolutionArchaeologist:
         with db.get_connection() as conn:
             cursor = conn.cursor()
             
-            # Query all commits that touched this file (using exact match or suffix match)
-            norm_path = file_path.replace("\\", "/")
-            name = norm_path.split("/")[-1]
+            # Query all commits that touched this file (using exact match or directory-bounded suffix match)
+            norm_path = file_path.replace("\\", "/").lstrip("/")
 
             rows = cursor.execute("""
-            SELECT c.* FROM commits c
+            SELECT DISTINCT c.* FROM commits c
             JOIN commit_files cf ON c.id = cf.commit_id
-            WHERE c.repo_id = ? AND (cf.file_path = ? OR cf.file_path LIKE ?)
+            WHERE c.repo_id = ? AND (
+                cf.file_path = ? 
+                OR cf.file_path = ?
+                OR cf.file_path LIKE ?
+            )
             ORDER BY c.timestamp ASC
-            """, (repo_id, norm_path, f"%{name}")).fetchall()
+            """, (repo_id, norm_path, f"./{norm_path}", f"%/{norm_path}")).fetchall()
 
             commits: List[CommitRecord] = []
             for r in rows:

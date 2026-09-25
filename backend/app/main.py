@@ -1,4 +1,5 @@
 import os
+import uuid
 import logging
 from typing import Dict, Any, Optional
 
@@ -63,8 +64,10 @@ class IngestRequest(BaseModel):
 class ChatRequest(BaseModel):
     question: str
 
-def get_or_load_pipeline(repo_id: str) -> CodeArchaeologistPipeline:
-    if repo_id in pipelines:
+tasks_status: Dict[str, Dict[str, Any]] = {}
+
+def get_or_load_pipeline(repo_id: str, force_reanalyze: bool = False) -> CodeArchaeologistPipeline:
+    if repo_id in pipelines and not force_reanalyze:
         return pipelines[repo_id]
     
     # Check DB
@@ -73,9 +76,35 @@ def get_or_load_pipeline(repo_id: str) -> CodeArchaeologistPipeline:
         raise HTTPException(status_code=404, detail=f"Repository '{repo_id}' not found.")
     
     pipeline = CodeArchaeologistPipeline(repo_id, repo_info["path"])
+    if not force_reanalyze:
+        loaded = pipeline.load_from_db()
+        if loaded:
+            logger.info(f"Loaded existing pipeline state for '{repo_id}' directly from SQLite database.")
+            pipelines[repo_id] = pipeline
+            return pipeline
+
+    logger.info(f"Running full pipeline analysis for '{repo_id}'...")
     pipeline.run_full_pipeline()
     pipelines[repo_id] = pipeline
     return pipeline
+
+def _run_ingest_background(task_id: str, repo_url_or_path: str, force_reclone: bool):
+    tasks_status[task_id] = {"status": "processing", "progress": "Cloning repository..."}
+    try:
+        repo_id, local_path, meta = cloner.clone_or_load(repo_url_or_path, force_reclone)
+        tasks_status[task_id]["progress"] = f"Repository cloned. Running analysis for {repo_id}..."
+        pipeline = CodeArchaeologistPipeline(repo_id, local_path)
+        summary = pipeline.run_full_pipeline()
+        pipelines[repo_id] = pipeline
+        tasks_status[task_id] = {
+            "status": "completed",
+            "repo_id": repo_id,
+            "summary": summary,
+            "meta": meta
+        }
+    except Exception as e:
+        logger.error(f"Async ingestion task {task_id} failed: {e}", exc_info=True)
+        tasks_status[task_id] = {"status": "failed", "error": str(e)}
 
 @app.get("/")
 def root():
@@ -122,6 +151,20 @@ def ingest_repository(req: IngestRequest):
     except Exception as e:
         logger.error(f"Ingestion failed: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/ingest/async")
+def ingest_repository_async(req: IngestRequest, bg_tasks: BackgroundTasks):
+    import uuid
+    task_id = f"task_{uuid.uuid4().hex[:8]}"
+    tasks_status[task_id] = {"status": "queued", "progress": "Queued for processing"}
+    bg_tasks.add_task(_run_ingest_background, task_id, req.repo_url_or_path, req.force_reclone)
+    return {"task_id": task_id, "status": "queued"}
+
+@app.get("/api/tasks/{task_id}")
+def get_task_status(task_id: str):
+    if task_id not in tasks_status:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return tasks_status[task_id]
 
 @app.post("/api/load-sample")
 def load_sample():
