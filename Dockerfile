@@ -34,16 +34,10 @@ ENV HOME=/home/user \
 
 WORKDIR /app
 
-# Pre-install CPU-only PyTorch for fast builds and low image size
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu
-
-# Install Python backend requirements
+# Upgrade pip and install production backend requirements
+RUN pip install --no-cache-dir --upgrade pip
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-
-# Pre-download SentenceTransformer model weights so first request is instant
-RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')"
 
 # Copy application source code
 COPY backend/ ./backend/
