@@ -27,6 +27,11 @@ class RepoDatabaseService:
     def save_files(self, repo_id: str, files: List[Dict[str, Any]]):
         with self.db.get_connection() as conn:
             cursor = conn.cursor()
+            # Ensure repository record exists to satisfy foreign key constraints
+            cursor.execute("""
+            INSERT OR IGNORE INTO repositories (id, name, path)
+            VALUES (?, ?, ?)
+            """, (repo_id, repo_id, ""))
             # Remove previous file records for clean re-ingestion
             cursor.execute("DELETE FROM files WHERE repo_id = ?", (repo_id,))
             

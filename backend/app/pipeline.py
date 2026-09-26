@@ -97,6 +97,15 @@ class CodeArchaeologistPipeline:
             classified_files.append(pf)
 
         self.files_data = classified_files
+        # Ensure repository record exists in DB early to satisfy foreign key constraints
+        self.db_service.save_repository(
+            repo_id=self.repo_id,
+            name=Path(self.repo_path).name,
+            path=self.repo_path,
+            url=self.repo_path,
+            default_branch="main",
+            stats={"total_files": len(classified_files)}
+        )
         self.db_service.save_files(self.repo_id, classified_files)
         self.ast_parser.save_parsed_data(self.repo_id, classified_files)
 

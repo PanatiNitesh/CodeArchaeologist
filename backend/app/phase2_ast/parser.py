@@ -484,6 +484,10 @@ class CodeASTParser:
     def save_parsed_data(self, repo_id: str, parsed_files: List[Dict[str, Any]]):
         with db.get_connection() as conn:
             cursor = conn.cursor()
+            cursor.execute("""
+            INSERT OR IGNORE INTO repositories (id, name, path)
+            VALUES (?, ?, ?)
+            """, (repo_id, repo_id, ""))
             cursor.execute("DELETE FROM symbols WHERE repo_id = ?", (repo_id,))
             cursor.execute("DELETE FROM imports WHERE repo_id = ?", (repo_id,))
             cursor.execute("DELETE FROM exports WHERE repo_id = ?", (repo_id,))

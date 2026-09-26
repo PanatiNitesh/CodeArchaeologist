@@ -92,6 +92,14 @@ def _run_ingest_background(task_id: str, repo_url_or_path: str, force_reclone: b
     tasks_status[task_id] = {"status": "processing", "progress": "Cloning repository..."}
     try:
         repo_id, local_path, meta = cloner.clone_or_load(repo_url_or_path, force_reclone)
+        db_service.save_repository(
+            repo_id=repo_id,
+            name=meta.get("name", repo_id),
+            path=local_path,
+            url=meta.get("url", repo_url_or_path),
+            default_branch=meta.get("default_branch", "main"),
+            stats={}
+        )
         tasks_status[task_id]["progress"] = f"Repository cloned. Running analysis for {repo_id}..."
         pipeline = CodeArchaeologistPipeline(repo_id, local_path)
         summary = pipeline.run_full_pipeline()
@@ -139,6 +147,14 @@ def health():
 def ingest_repository(req: IngestRequest):
     try:
         repo_id, local_path, meta = cloner.clone_or_load(req.repo_url_or_path, req.force_reclone)
+        db_service.save_repository(
+            repo_id=repo_id,
+            name=meta.get("name", repo_id),
+            path=local_path,
+            url=meta.get("url", req.repo_url_or_path),
+            default_branch=meta.get("default_branch", "main"),
+            stats={}
+        )
         pipeline = CodeArchaeologistPipeline(repo_id, local_path)
         summary = pipeline.run_full_pipeline()
         pipelines[repo_id] = pipeline
