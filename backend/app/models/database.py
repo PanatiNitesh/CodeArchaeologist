@@ -133,6 +133,16 @@ class DatabaseManager:
                 FOREIGN KEY (repo_id) REFERENCES repositories(id) ON DELETE CASCADE
             );
 
+            CREATE TABLE IF NOT EXISTS background_tasks (
+                task_id TEXT PRIMARY KEY,
+                status TEXT NOT NULL,
+                progress TEXT,
+                repo_id TEXT,
+                error TEXT,
+                summary_json TEXT,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+
             CREATE INDEX IF NOT EXISTS idx_files_repo ON files(repo_id);
             CREATE INDEX IF NOT EXISTS idx_files_path ON files(path);
             CREATE INDEX IF NOT EXISTS idx_symbols_file ON symbols(file_id);
@@ -142,7 +152,40 @@ class DatabaseManager:
             CREATE INDEX IF NOT EXISTS idx_edges_repo ON graph_edges(repo_id);
             CREATE INDEX IF NOT EXISTS idx_edges_source ON graph_edges(source);
             CREATE INDEX IF NOT EXISTS idx_edges_target ON graph_edges(target);
+            CREATE INDEX IF NOT EXISTS idx_tasks_status ON background_tasks(status);
             """)
             conn.commit()
 
+    def save_task(self, task_id: str, status: str, progress: Optional[str] = None, repo_id: Optional[str] = None, error: Optional[str] = None, summary: Optional[Dict[str, Any]] = None):
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+            INSERT INTO background_tasks (task_id, status, progress, repo_id, error, summary_json, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+            ON CONFLICT(task_id) DO UPDATE SET
+                status=excluded.status,
+                progress=excluded.progress,
+                repo_id=excluded.repo_id,
+                error=excluded.error,
+                summary_json=excluded.summary_json,
+                updated_at=CURRENT_TIMESTAMP
+            """, (task_id, status, progress, repo_id, error, json.dumps(summary) if summary else None))
+            conn.commit()
+
+    def get_task(self, task_id: str) -> Optional[Dict[str, Any]]:
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM background_tasks WHERE task_id = ?", (task_id,))
+            row = cursor.fetchone()
+            if not row:
+                return None
+            res = dict(row)
+            if res.get("summary_json"):
+                try:
+                    res["summary"] = json.loads(res["summary_json"])
+                except Exception:
+                    pass
+            return res
+
 db = DatabaseManager()
+

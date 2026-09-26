@@ -1,42 +1,35 @@
 # 🏛️ CodeArchaeologist
 > **AI-Powered Software Evolution & Legacy Code Intelligence Engine**
 
-```
-                    CODEARCHAEOLOGIST
-                           │
-             ┌─────────────┼─────────────┐
-             ↓             ↓             ↓
-          SOURCE          GIT           DOCS
-           CODE          HISTORY
-             │             │
-             ↓             ↓
-          AST/ML       Commit Mining
-             │             │
-             ↓             ↓
-       Dependency      Evolution
-          Graph           Graph
-             │             │
-             └──────┬──────┘
-                    ↓
-             KNOWLEDGE LAYER
-                    │
-             ┌──────┴──────┐
-             ↓             ↓
-         Vector DB      Graph DB
-             │             │
-             └──────┬──────┘
-                    ↓
-                 RAG
-                    ↓
-                   LLM
-                    ↓
-        ┌───────────┼───────────┐
-        ↓           ↓           ↓
-    Explain      History    Blast Radius
-        │           │           │
-        └───────────┼───────────┘
-                    ↓
-             DEVELOPER STUDIO
+```mermaid
+graph TD
+    classDef source fill:#1e1e2e,stroke:#89b4fa,stroke-width:2px,color:#cdd6f4;
+    classDef phase fill:#181825,stroke:#f38ba8,stroke-width:2px,color:#cdd6f4;
+    classDef graphEngine fill:#181825,stroke:#a6e3a1,stroke-width:2px,color:#cdd6f4;
+    classDef rag fill:#181825,stroke:#fab387,stroke-width:2px,color:#cdd6f4;
+    classDef output fill:#11111b,stroke:#cba6f7,stroke-width:3px,color:#ffffff;
+
+    subgraph INGESTION ["📥 Multi-Source Ingestion Engine"]
+        A["🌐 Git Remote / Local Repo"]:::source --> B["📁 Multi-Language Crawler<br/><i>.py, .ts, .js, .java, .go, .rs</i>"]:::source
+        B --> C["🌳 Dual AST Parsers<br/><i>Python Native + TypeScript/Babel</i>"]:::phase
+        B --> D["📜 Git Archaeology Miner<br/><i>4+ Yr Commit & Churn History</i>"]:::phase
+    end
+
+    subgraph GRAPH_ENGINE ["🕸️ Graph & Intelligence Layer"]
+        C --> E["🧭 Directed Call & Dependency Graph<br/><i>NetworkX Multi-Tier Topology</i>"]:::graphEngine
+        D --> F["⏱️ Software Evolution Timeline<br/><i>Classified Commits & Author Mapping</i>"]:::graphEngine
+        E & F --> G["💥 Transitive Blast Radius Engine<br/><i>Ripple Effects & Impact Risk Scoring</i>"]:::graphEngine
+        D & E --> H["📈 ML Change Predictor<br/><i>Historical Co-Change Matrix P(B|A)</i>"]:::graphEngine
+    end
+
+    subgraph KNOWLEDGE ["🧠 Grounded Knowledge Layer"]
+        B & C & D --> I["🔍 Hybrid Multi-Channel RAG<br/><i>Dense Neural Embeddings + Lexical BM25</i>"]:::rag
+        I --> J["⚖️ Reciprocal Rank Fusion (RRF)<br/><i>Strict Verifiable Citations (Line & Commit)</i>"]:::rag
+    end
+
+    subgraph STUDIO ["🖥️ Developer Intelligence Dashboard"]
+        G & H & F & J --> K["🏛️ Interactive Architecture Graph<br/>& Evolution Intelligence Suite"]:::output
+    end
 ```
 
 ---
@@ -75,25 +68,27 @@ Modern developer tools fall into distinct categories. Here is how **CodeArchaeol
 
 In **CodeArchaeologist**, the LLM is **not** making up architectural assumptions, guessing dependencies, or hallucinating risk. The system maintains a strict division of responsibility:
 
-```
-┌────────────────────────────────────────────────────────────────────────┐
-│                   DETERMINISTIC ANALYTICAL ENGINE                      │
-│                                                                        │
-│   • AST Parsers & Symbol Extractors (Babel / TypeScript / Native)      │
-│   • Directed Dependency Graphs & Call Trees (NetworkX)                │
-│   • Empirical Git History & Churn Mining (GitPython)                   │
-│   • Topological Reachability & Blast Radius Transitive Closure         │
-│   • Historical Co-Change Transaction Matrix P(CoChange(A, B))          │
-└───────────────────────────────────┬────────────────────────────────────┘
-                                    │ Structured Evidence & Subgraphs
-                                    ▼
-┌────────────────────────────────────────────────────────────────────────┐
-│                  EVIDENCE-GROUNDED SYNTHESIZER                         │
-│                                                                        │
-│   • Grounds answers strictly in verified line ranges and commits       │
-│   • Reports empirical confidence scores calibrated by commit history   │
-│   • Formats human-readable explanations with clickable evidence cards  │
-└────────────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    classDef deter fill:#1e1e2e,stroke:#89b4fa,stroke-width:2px,color:#cdd6f4;
+    classDef ground fill:#181825,stroke:#a6e3a1,stroke-width:2px,color:#cdd6f4;
+    classDef llm fill:#181825,stroke:#fab387,stroke-width:2px,color:#cdd6f4;
+
+    subgraph DETERMINISTIC ["🛡️ DETERMINISTIC ANALYTICAL CORE (Strict Code Truth)"]
+        D1["AST Parsers & Symbol Extractors (Python Native & TypeScript)"]:::deter
+        D2["Directed Dependency Graphs & Call Trees (NetworkX)"]:::deter
+        D3["Empirical Git History & Churn Mining (GitPython)"]:::deter
+        D4["Historical Co-Change Matrix P(CoChange(B|A))"]:::deter
+        D5["Topological Reachability & Cascading Blast Radius"]:::deter
+    end
+
+    D1 & D2 & D3 & D4 & D5 ==> Evidence["📦 Structured Evidence Tuples<br/><code>(File Path, Line Ranges, Commit Hash, Author, Timestamp)</code>"]:::ground
+
+    subgraph LLM_LAYER ["🤖 EVIDENCE-GROUNDED SYNTHESIZER"]
+        Evidence ==> Prompt["Strict Grounding Prompt<br/><i>No unverified architectural assumptions</i>"]:::llm
+        Prompt ==> LLM["LLM Synthesis (Gemini / OpenAI / Offline Fallback)"]:::llm
+        LLM ==> Output["📝 Verifiable Explanations with Clickable Proof Cards"]:::ground
+    end
 ```
 
 > [!IMPORTANT]
@@ -135,20 +130,24 @@ In **CodeArchaeologist**, the LLM is **not** making up architectural assumptions
 
 **CodeArchaeologist** is built with and orchestrated by **IBM Bob 2.0**, leveraging Bob's autonomous agent framework, custom skills architecture, and lifecycle hooks for legacy code intelligence:
 
-```
-                      ┌─────────────────────────────────┐
-                      │           IBM BOB 2.0           │
-                      │      Autonomous Orchestrator    │
-                      └──────────────┬──────────────────┘
-                                     │
-         ┌───────────────────────────┼───────────────────────────┐
-         │                           │                           │
-         ▼                           ▼                           ▼
-┌──────────────────┐       ┌──────────────────┐        ┌──────────────────┐
-│  .bob/config.json│       │  .bob/skills/    │        │  .bob/hooks.json │
-│  Agent Persona & │       │  • archaeologist │        │  • pre_refactor  │
-│  Orchestration   │       │  • blast_guard   │        │  • pr_impact_pred│
-└──────────────────┘       └──────────────────┘        └──────────────────┘
+```mermaid
+flowchart TD
+    classDef bob fill:#1e1e2e,stroke:#89b4fa,stroke-width:2px,color:#cdd6f4;
+    classDef skill fill:#181825,stroke:#a6e3a1,stroke-width:2px,color:#cdd6f4;
+    classDef hook fill:#181825,stroke:#fab387,stroke-width:2px,color:#cdd6f4;
+
+    Bob["🤖 IBM BOB 2.0<br/><b>Autonomous Orchestration Engine</b>"]:::bob
+    
+    Bob --> Config[".bob/config.json<br/><i>Agent Persona & Mode Mapping</i>"]:::bob
+    Bob --> Skills[".bob/skills/<br/><i>Custom Specialized Skills</i>"]:::skill
+    Bob --> Hooks[".bob/hooks.json<br/><i>Lifecycle Automation Hooks</i>"]:::hook
+
+    Skills --> S1["legacy-code-archaeologist<br/><i>Git history & design intent recovery</i>"]:::skill
+    Skills --> S2["blast-radius-guard<br/><i>Pre-refactor risk & caller analysis</i>"]:::skill
+
+    Hooks --> H1["pre-refactor-blast-check<br/><i>Cascading dependency safety check</i>"]:::hook
+    Hooks --> H2["on-pr-review-impact-prediction<br/><i>Predicts historical co-change regressions</i>"]:::hook
+    Hooks --> H3["evidence-grounded-qa<br/><i>Enforces line & commit citations</i>"]:::hook
 ```
 
 ### 1. Dedicated IBM Bob 2.0 Skills (`.bob/skills/`)
@@ -215,7 +214,29 @@ When inspecting a file (e.g. `src/payment/paymentService.ts`):
 4. **Affected Tests**: Test suites that should be executed before deploying.
 5. **Calibrated Change-Impact Likelihood**: Combines historical co-change mining ($P(\text{CoChange}(B \mid A))$) with graph topological distance to rank predicted files with empirical confidence scores.
 
+```mermaid
+flowchart LR
+    classDef seed fill:#f38ba8,stroke:#eba0ac,stroke-width:3px,color:#11111b;
+    classDef direct fill:#fab387,stroke:#f9e2af,stroke-width:2px,color:#11111b;
+    classDef indirect fill:#89b4fa,stroke:#b4befe,stroke-width:2px,color:#11111b;
+    classDef test fill:#a6e3a1,stroke:#94e2d5,stroke-width:2px,color:#11111b;
+
+    Seed["🎯 Seed File:<br/><b>OrderService.ts</b>"]:::seed
+    
+    Seed -->|direct import| Controller["OrderController.ts<br/><i>(Ingress API)</i>"]:::direct
+    Seed -->|invokes| Payment["PaymentService.ts<br/><i>(Domain Service)</i>"]:::direct
+    
+    Controller -->|exposes route| AppRouter["app.ts<br/><i>(Public Gateway)</i>"]:::indirect
+    Payment -->|queries| TxRepo["TransactionRepository.ts<br/><i>(Database Layer)</i>"]:::indirect
+    
+    Seed -.->|co-changed in 83% commits| Notification["NotificationService.ts<br/><i>(Empirical Co-Change)</i>"]:::indirect
+    
+    Seed -->|tested by| OrderTest["OrderService.test.ts<br/><i>(Regression Suite)</i>"]:::test
+    Payment -->|tested by| PaymentTest["PaymentService.test.ts<br/><i>(Regression Suite)</i>"]:::test
+```
+
 ---
+
 
 ## 🔍 Phase 5: Verifiable Evidence-Based RAG
 

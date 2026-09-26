@@ -90,6 +90,7 @@ def get_or_load_pipeline(repo_id: str, force_reanalyze: bool = False) -> CodeArc
 
 def _run_ingest_background(task_id: str, repo_url_or_path: str, force_reclone: bool):
     tasks_status[task_id] = {"status": "processing", "progress": "Cloning repository..."}
+    db_service.db.save_task(task_id, status="processing", progress="Cloning repository...")
     try:
         repo_id, local_path, meta = cloner.clone_or_load(repo_url_or_path, force_reclone)
         db_service.save_repository(
@@ -101,6 +102,7 @@ def _run_ingest_background(task_id: str, repo_url_or_path: str, force_reclone: b
             stats={}
         )
         tasks_status[task_id]["progress"] = f"Repository cloned. Running analysis for {repo_id}..."
+        db_service.db.save_task(task_id, status="processing", progress=f"Repository cloned. Running analysis for {repo_id}...", repo_id=repo_id)
         pipeline = CodeArchaeologistPipeline(repo_id, local_path)
         summary = pipeline.run_full_pipeline()
         pipelines[repo_id] = pipeline
@@ -110,9 +112,11 @@ def _run_ingest_background(task_id: str, repo_url_or_path: str, force_reclone: b
             "summary": summary,
             "meta": meta
         }
+        db_service.db.save_task(task_id, status="completed", progress="Completed", repo_id=repo_id, summary=summary)
     except Exception as e:
         logger.error(f"Async ingestion task {task_id} failed: {e}", exc_info=True)
         tasks_status[task_id] = {"status": "failed", "error": str(e)}
+        db_service.db.save_task(task_id, status="failed", error=str(e))
 
 @app.get("/")
 def root():
@@ -173,14 +177,27 @@ def ingest_repository_async(req: IngestRequest, bg_tasks: BackgroundTasks):
     import uuid
     task_id = f"task_{uuid.uuid4().hex[:8]}"
     tasks_status[task_id] = {"status": "queued", "progress": "Queued for processing"}
+    db_service.db.save_task(task_id, status="queued", progress="Queued for processing")
     bg_tasks.add_task(_run_ingest_background, task_id, req.repo_url_or_path, req.force_reclone)
     return {"task_id": task_id, "status": "queued"}
 
 @app.get("/api/tasks/{task_id}")
 def get_task_status(task_id: str):
-    if task_id not in tasks_status:
-        raise HTTPException(status_code=404, detail="Task not found")
-    return tasks_status[task_id]
+    if task_id in tasks_status:
+        return tasks_status[task_id]
+    
+    # Fallback to persistent SQLite task store
+    db_task = db_service.db.get_task(task_id)
+    if db_task:
+        tasks_status[task_id] = db_task
+        return db_task
+    
+    # Return graceful terminal status instead of hard 404 to cleanly end client polling
+    return {
+        "task_id": task_id,
+        "status": "failed",
+        "error": "Task not found or expired. Please submit ingestion again."
+    }
 
 @app.post("/api/load-sample")
 def load_sample():
