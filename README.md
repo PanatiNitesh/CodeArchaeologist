@@ -1,16 +1,5 @@
----
-title: CodeArchaeologist
-emoji: 🏛️
-colorFrom: indigo
-colorTo: blue
-sdk: docker
-app_port: 7860
-pinned: false
----
-
 # 🏛️ CodeArchaeologist
 > **AI-Powered Software Evolution & Legacy Code Intelligence Engine**
-
 
 ```
                     CODEARCHAEOLOGIST
