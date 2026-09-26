@@ -54,8 +54,11 @@ class RepoExtractor:
                 if ext in ALLOWED_EXTENSIONS:
                     full_path = Path(root) / file
                     try:
-                        rel_path = full_path.relative_to(self.repo_path).as_posix()
                         size = full_path.stat().st_size
+                        # Guard against OOM memory spikes: skip oversized/bundled files (> 500 KB)
+                        if size > 500 * 1024:
+                            continue
+                        rel_path = full_path.relative_to(self.repo_path).as_posix()
                         
                         # Read file safely
                         with open(full_path, "r", encoding="utf-8", errors="replace") as f:

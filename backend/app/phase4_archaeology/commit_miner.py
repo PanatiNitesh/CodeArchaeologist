@@ -13,10 +13,10 @@ class CommitMiner:
     def __init__(self):
         self.classifier = CommitClassifier()
 
-    def mine_commits(self, repo_id: str, repo_path: str, max_commits: Optional[int] = 2500) -> List[CommitRecord]:
+    def mine_commits(self, repo_id: str, repo_path: str, max_commits: Optional[int] = 1000) -> List[CommitRecord]:
         """
         Extracts historical git commits, changes, rename events, and categorizes intent.
-        Supports configurable max_commits (pass None for exhaustive mining).
+        Defaults to 1000 commits to maintain low memory consumption on 512MB cloud instances.
         """
         try:
             repo = git.Repo(repo_path)
