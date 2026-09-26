@@ -239,3 +239,19 @@ def ask_ai(repo_id: str, req: ChatRequest):
 def get_evaluation(repo_id: str):
     pipeline = get_or_load_pipeline(repo_id)
     return pipeline.evaluation_result
+
+@app.get("/{full_path:path}")
+def catch_all(full_path: str):
+    if full_path.startswith("api"):
+        raise HTTPException(status_code=404, detail="API endpoint not found")
+    file_candidate = FRONTEND_DIST / full_path
+    if file_candidate.exists() and file_candidate.is_file():
+        return FileResponse(str(file_candidate))
+    index_html = FRONTEND_DIST / "index.html"
+    if index_html.exists():
+        return FileResponse(str(index_html))
+    return {
+        "system": "CodeArchaeologist",
+        "tagline": "AI-Powered Software Evolution & Legacy Code Intelligence",
+        "status": "ready"
+    }

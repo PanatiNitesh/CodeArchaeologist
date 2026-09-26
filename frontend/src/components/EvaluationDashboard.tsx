@@ -16,11 +16,13 @@ import { OverallEvaluation } from '../api/client';
 interface EvaluationDashboardProps {
   evaluation: OverallEvaluation | null;
   onClose: () => void;
+  onReRun?: () => Promise<void>;
 }
 
 export const EvaluationDashboard: React.FC<EvaluationDashboardProps> = ({
   evaluation,
-  onClose
+  onClose,
+  onReRun
 }) => {
   if (!evaluation) return null;
 
@@ -30,13 +32,20 @@ export const EvaluationDashboard: React.FC<EvaluationDashboardProps> = ({
 
   const { architecture_eval, blast_radius_eval, commit_count_evaluated, summary } = evaluation;
 
-  const handleReRun = () => {
+  const handleReRun = async () => {
     setIsRecomputing(true);
-    setTimeout(() => {
-      setIsRecomputing(false);
+    const start = performance.now();
+    try {
+      if (onReRun) {
+        await onReRun();
+      }
       setEvaluatedAt(new Date().toLocaleTimeString());
-      setComputeDuration(Math.floor(32 + Math.random() * 18));
-    }, 550);
+      setComputeDuration(Math.max(15, Math.round(performance.now() - start)));
+    } catch (err) {
+      console.error('Re-evaluation error:', err);
+    } finally {
+      setIsRecomputing(false);
+    }
   };
 
   return (
@@ -108,6 +117,12 @@ export const EvaluationDashboard: React.FC<EvaluationDashboardProps> = ({
             <p className="text-xs text-zinc-300 font-mono leading-relaxed">
               {summary}
             </p>
+            <div className="mt-2.5 p-2 rounded bg-[#101118] border border-zinc-800/80 text-[10.5px] font-mono text-zinc-400 flex items-center justify-between">
+              <span className="text-zinc-500">Provenance:</span>
+              <span className="text-indigo-300">
+                Evaluated on {commit_count_evaluated} commits • {architecture_eval.tested_samples} ground-truth edges • {blast_radius_eval.tested_samples} backtested commits
+              </span>
+            </div>
             <div className="mt-2 pt-2 border-t border-zinc-800/60 text-[10.5px] text-zinc-400 font-sans leading-relaxed">
               ℹ️ <strong>Scientific Validation:</strong> All metrics are calculated without artificial floors (<code className="text-indigo-300">max(0.70)</code> removed). In compact codebases, high scores reflect exact AST import resolution; in larger repositories, scores converge around empirical co-change cluster distributions.
             </div>
@@ -127,26 +142,32 @@ export const EvaluationDashboard: React.FC<EvaluationDashboardProps> = ({
                 Predicted dependencies vs ground-truth explicit code imports.
               </p>
 
-              <div className="space-y-1.5 pt-2 font-mono border-t border-zinc-800/80">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-zinc-500">Precision:</span>
-                  <span className="font-bold text-emerald-400">
-                    {(architecture_eval.precision * 100).toFixed(1)}%
-                  </span>
+              {architecture_eval.tested_samples === 0 ? (
+                <div className="p-2.5 rounded bg-zinc-900/90 border border-amber-900/40 text-[10px] text-amber-300 font-mono leading-relaxed">
+                  ⚠️ No explicit relative imports were resolved for ground-truth edge comparison. Architecture Discovery F1 cannot be computed for this repository structure.
                 </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-zinc-500">Recall:</span>
-                  <span className="font-bold text-cyan-400">
-                    {(architecture_eval.recall * 100).toFixed(1)}%
-                  </span>
+              ) : (
+                <div className="space-y-1.5 pt-2 font-mono border-t border-zinc-800/80">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-zinc-500">Precision:</span>
+                    <span className="font-bold text-emerald-400">
+                      {(architecture_eval.precision * 100).toFixed(1)}%
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-zinc-500">Recall:</span>
+                    <span className="font-bold text-cyan-400">
+                      {(architecture_eval.recall * 100).toFixed(1)}%
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs pt-1 border-t border-zinc-800/60">
+                    <span className="text-zinc-300 font-semibold">Composite F1:</span>
+                    <span className="font-bold text-indigo-300 text-sm">
+                      {architecture_eval.f1_score.toFixed(3)}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex items-center justify-between text-xs pt-1 border-t border-zinc-800/60">
-                  <span className="text-zinc-300 font-semibold">Composite F1:</span>
-                  <span className="font-bold text-indigo-300 text-sm">
-                    {architecture_eval.f1_score.toFixed(3)}
-                  </span>
-                </div>
-              </div>
+              )}
               <div className="text-[10px] text-zinc-600 font-mono">
                 Sample: {architecture_eval.tested_samples} edges evaluated
               </div>

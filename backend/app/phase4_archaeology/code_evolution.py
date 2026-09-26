@@ -88,6 +88,11 @@ class CodeEvolutionArchaeologist:
                         "author": c.author
                     })
 
+            # Compute derived churn and hotspot scores
+            total_churn = sum((c.added_lines or 0) + (c.deleted_lines or 0) for c in commits)
+            churn_per_revision = round(total_churn / max(1, len(commits)), 1)
+            hotspot_score = round(min(10.0, ((len(bug_fixes) * 3 + len(refactors)) / max(1, len(commits))) * 10), 1)
+
             return FileEvolution(
                 file_path=file_path,
                 created_date=first_commit.date,
@@ -99,5 +104,8 @@ class CodeEvolutionArchaeologist:
                 major_milestones=major_milestones,
                 bug_fixes=bug_fixes[:10],
                 refactors=refactors[:10],
-                recent_changes=commits[-10:][::-1] # most recent first
+                recent_changes=commits[-10:][::-1], # most recent first
+                total_churn=total_churn,
+                churn_per_revision=churn_per_revision,
+                hotspot_score=hotspot_score
             )

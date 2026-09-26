@@ -12,6 +12,7 @@ except ImportError:
     pass
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 8000))
-    print(f"=== Starting CodeArchaeologist Backend Server on http://localhost:{port} ===")
-    uvicorn.run("backend.app.main:app", host="127.0.0.1", port=port, reload=False)
+    host = os.environ.get("HOST", "0.0.0.0")
+    port = int(os.environ.get("PORT", 7860))
+    print(f"=== Starting CodeArchaeologist Backend Server on http://{host}:{port} ===")
+    uvicorn.run("backend.app.main:app", host=host, port=port, reload=False)

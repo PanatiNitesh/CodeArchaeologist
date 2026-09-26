@@ -12,7 +12,7 @@ import {
   Activity,
   FolderGit2
 } from 'lucide-react';
-import { RepositoryItem } from '../api/client';
+import { RepositoryItem, api } from '../api/client';
 
 interface HeaderProps {
   repositories: RepositoryItem[];
@@ -36,22 +36,67 @@ export const Header: React.FC<HeaderProps> = ({
   const [showIngestModal, setShowIngestModal] = useState(false);
   const [inputUrl, setInputUrl] = useState('');
   const [ingestLoading, setIngestLoading] = useState(false);
+  const [ingestStatusText, setIngestStatusText] = useState('');
   const [copied, setCopied] = useState(false);
 
   const currentRepo = repositories.find(r => r.id === currentRepoId);
 
   const handleIngestSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inputUrl.trim()) return;
+    const url = inputUrl.trim();
+    if (!url) return;
     setIngestLoading(true);
+    setIngestStatusText('Initiating repository archaeology...');
     try {
-      await onIngest(inputUrl.trim());
-      setShowIngestModal(false);
-      setInputUrl('');
+      const { task_id } = await api.ingestAsync(url);
+      setIngestStatusText('Ingestion task queued. Processing...');
+      
+      let attempts = 0;
+      const pollInterval = setInterval(async () => {
+        attempts++;
+        try {
+          const statusData = await api.getTaskStatus(task_id);
+          if (statusData.progress) {
+            setIngestStatusText(statusData.progress);
+          }
+          if (statusData.status === 'completed') {
+            clearInterval(pollInterval);
+            setIngestLoading(false);
+            setShowIngestModal(false);
+            setInputUrl('');
+            setIngestStatusText('');
+            if (statusData.repo_id) {
+              onSelectRepo(statusData.repo_id);
+            } else {
+              await onIngest(url);
+            }
+          } else if (statusData.status === 'failed') {
+            clearInterval(pollInterval);
+            setIngestLoading(false);
+            setIngestStatusText('');
+            alert(`Ingestion failed: ${statusData.error || 'Unknown error'}`);
+          } else if (attempts > 120) {
+            clearInterval(pollInterval);
+            setIngestLoading(false);
+            setIngestStatusText('');
+            alert('Ingestion timed out.');
+          }
+        } catch (err) {
+          console.warn('Poll error:', err);
+        }
+      }, 1500);
     } catch (err) {
-      alert(`Ingestion failed: ${err}`);
-    } finally {
-      setIngestLoading(false);
+      try {
+        setIngestStatusText('Running sync analysis...');
+        await onIngest(url);
+        setShowIngestModal(false);
+        setInputUrl('');
+      } catch (syncErr) {
+        alert(`Ingestion failed: ${syncErr}`);
+      } finally {
+        setIngestLoading(false);
+        setIngestStatusText('');
+      }
     }
   };
 
@@ -279,9 +324,9 @@ export const Header: React.FC<HeaderProps> = ({
                 <button
                   type="submit"
                   disabled={ingestLoading}
-                  className="btn-studio btn-studio-primary"
+                  className="btn-studio btn-studio-primary min-w-[140px]"
                 >
-                  {ingestLoading ? 'Analyzing Pipeline...' : 'Run Archaeology Ingestion'}
+                  {ingestLoading ? (ingestStatusText || 'Analyzing Pipeline...') : 'Run Archaeology Ingestion'}
                 </button>
               </div>
             </form>

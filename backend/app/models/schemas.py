@@ -139,6 +139,9 @@ class FileEvolution(BaseModel):
     bug_fixes: List[CommitRecord]
     refactors: List[CommitRecord]
     recent_changes: List[CommitRecord]
+    total_churn: int = 0
+    churn_per_revision: float = 0.0
+    hotspot_score: float = 0.0
 
 class EvidenceItem(BaseModel):
     file_path: str

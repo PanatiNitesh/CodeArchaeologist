@@ -12,11 +12,12 @@ class MLChangeImpactPredictor:
     Predicts probability of file impact when a specific target file is changed.
     """
 
-    def __init__(self, commits: List[Any], dep_graph: nx.DiGraph, file_metadata: Dict[str, Dict[str, Any]]):
+    def __init__(self, commits: List[Any], dep_graph: nx.DiGraph, file_metadata: Dict[str, Dict[str, Any]], rename_map: Dict[str, str] = None):
         self.commits = commits
         self.dep_graph = dep_graph
         self.reverse_graph = dep_graph.reverse(copy=True)
         self.file_metadata = file_metadata
+        self.rename_map = rename_map or {}
         self.co_change_matrix: Dict[Tuple[str, str], int] = defaultdict(int)
         self.file_commit_counts: Dict[str, int] = defaultdict(int)
         self.model = None
@@ -27,9 +28,12 @@ class MLChangeImpactPredictor:
     def _mine_co_changes(self):
         """
         Populate co-change frequencies from all multi-file commits in history.
+        Normalizes file paths through rename_map so historical co-changes under old names
+        accumulate into current-path counts.
         """
         for c in self.commits:
-            files = list(set([f.replace("\\", "/") for f in c.changed_files]))
+            raw_files = [f.replace("\\", "/") for f in c.changed_files]
+            files = list(set([self.rename_map.get(f, f) for f in raw_files]))
             for f in files:
                 self.file_commit_counts[f] += 1
             
@@ -40,12 +44,15 @@ class MLChangeImpactPredictor:
                     self.co_change_matrix[(f2, f1)] += 1
 
     def _extract_features(self, target: str, candidate: str) -> List[float]:
+        norm_target = self.rename_map.get(target, target)
+        norm_candidate = self.rename_map.get(candidate, candidate)
+
         # 1. Co-change count
-        co_changes = self.co_change_matrix.get((target, candidate), 0)
+        co_changes = self.co_change_matrix.get((norm_target, norm_candidate), 0)
         
         # 2. Jaccard co-change coefficient
-        total_a = self.file_commit_counts.get(target, 1)
-        total_b = self.file_commit_counts.get(candidate, 1)
+        total_a = self.file_commit_counts.get(norm_target, 1)
+        total_b = self.file_commit_counts.get(norm_candidate, 1)
         jaccard = co_changes / max(1, (total_a + total_b - co_changes))
 
         # 3. Graph distance

@@ -120,6 +120,9 @@ export interface FileEvolution {
   bug_fixes: CommitRecord[];
   refactors: CommitRecord[];
   recent_changes: CommitRecord[];
+  total_churn?: number;
+  churn_per_revision?: number;
+  hotspot_score?: number;
 }
 
 export interface BlastRadiusResult {
@@ -197,6 +200,22 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ repo_url_or_path, force_reclone })
     });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+  },
+
+  async ingestAsync(repo_url_or_path: string, force_reclone: boolean = false): Promise<{ task_id: string; status: string }> {
+    const res = await fetch(`${API_BASE}/ingest/async`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ repo_url_or_path, force_reclone })
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+  },
+
+  async getTaskStatus(taskId: string): Promise<{ task_id: string; status: string; progress?: string; repo_id?: string; error?: string }> {
+    const res = await fetch(`${API_BASE}/tasks/${taskId}`);
     if (!res.ok) throw new Error(await res.text());
     return res.json();
   },

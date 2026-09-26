@@ -178,6 +178,15 @@ export const FileTree: React.FC<FileTreeProps> = ({
 
         <div className="flex items-center gap-1.5 shrink-0">
           {getComponentBadge(file.component_type, file.component_confidence)}
+          <span className={`text-[9px] font-mono ${
+            (file.component_confidence ?? 0.9) >= 0.88 
+              ? 'text-emerald-400' 
+              : (file.component_confidence ?? 0.9) >= 0.70 
+              ? 'text-amber-400' 
+              : 'text-zinc-500'
+          }`} title="ML classification confidence">
+            {Math.round((file.component_confidence || 0.92) * 100)}%
+          </span>
           <span className="text-[10px] text-zinc-600 font-mono hidden group-hover:inline">
             {file.loc}L
           </span>

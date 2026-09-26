@@ -81,6 +81,21 @@ export const FileIntelligence: React.FC<FileIntelligenceProps> = ({
               >
                 {Math.round((file.component_confidence || 0.92) * 100)}% conf
               </span>
+              {evolution?.hotspot_score && evolution.hotspot_score >= 4.0 ? (
+                <span 
+                  className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-rose-950 text-rose-300 border border-rose-800 flex items-center gap-1 font-semibold"
+                  title={`Regression hotspot score: ${evolution.hotspot_score}/10 based on bug fixes and churn frequency`}
+                >
+                  🔥 Hotspot ({evolution.hotspot_score})
+                </span>
+              ) : evolution?.hotspot_score && evolution.hotspot_score >= 2.0 ? (
+                <span 
+                  className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-amber-950 text-amber-300 border border-amber-800 flex items-center gap-1"
+                  title={`Watchlist score: ${evolution.hotspot_score}/10 based on bug fixes and revisions`}
+                >
+                  ⚠️ Watch ({evolution.hotspot_score})
+                </span>
+              ) : null}
             </div>
             <p className="text-[10px] text-zinc-500 font-mono truncate mt-0.5">{file.path}</p>
           </div>
@@ -116,7 +131,7 @@ export const FileIntelligence: React.FC<FileIntelligenceProps> = ({
         {activeTab === 'overview' && (
           <div className="space-y-3">
             {/* Metadata Stats Grid */}
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-4 gap-2">
               <div className="p-2 rounded bg-[#13141a] border border-zinc-800 text-center">
                 <span className="block text-[9px] font-mono text-zinc-500 uppercase">Lines</span>
                 <span className="font-mono font-semibold text-xs text-zinc-200">{file.loc}</span>
@@ -128,6 +143,18 @@ export const FileIntelligence: React.FC<FileIntelligenceProps> = ({
               <div className="p-2 rounded bg-[#13141a] border border-zinc-800 text-center">
                 <span className="block text-[9px] font-mono text-zinc-500 uppercase">Classes</span>
                 <span className="font-mono font-semibold text-xs text-emerald-400">{file.classes?.length ?? 0}</span>
+              </div>
+              <div className="p-2 rounded bg-[#13141a] border border-zinc-800 text-center">
+                <span className="block text-[9px] font-mono text-zinc-500 uppercase">Churn</span>
+                <span className={`font-mono font-semibold text-xs ${
+                  (evolution?.total_churn || 0) > 600
+                    ? 'text-rose-400'
+                    : (evolution?.total_churn || 0) > 200
+                    ? 'text-amber-400'
+                    : 'text-zinc-200'
+                }`}>
+                  {evolution?.total_churn ?? 0}
+                </span>
               </div>
             </div>
 
@@ -232,6 +259,20 @@ export const FileIntelligence: React.FC<FileIntelligenceProps> = ({
                     <span className="text-zinc-500">Total Contributors:</span>
                     <span className="text-zinc-300">{evolution.total_authors} developers</span>
                   </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-zinc-500">Historical Churn:</span>
+                    <span className="text-zinc-200">
+                      {evolution.total_churn ?? 0} lines ({evolution.churn_per_revision ?? 0}/rev)
+                    </span>
+                  </div>
+                  {evolution.hotspot_score !== undefined && evolution.hotspot_score > 0 && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-zinc-500">Hotspot Risk:</span>
+                      <span className={evolution.hotspot_score >= 4 ? 'text-rose-400 font-semibold' : 'text-amber-400'}>
+                        {evolution.hotspot_score} / 10
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Major Milestones */}
@@ -297,15 +338,34 @@ export const FileIntelligence: React.FC<FileIntelligenceProps> = ({
                   </p>
                 </div>
 
-                {/* Direct Consumers */}
+                {/* Direct Dependents */}
                 <div>
-                  <span className="text-[10px] font-mono font-semibold uppercase tracking-wider text-zinc-400 flex items-center justify-between mb-1">
-                    <span>Direct Consumers (1-Hop):</span>
-                    <span className="text-rose-400">{blastRadius.direct_affected_files.length}</span>
+                  <span className="text-[10px] font-mono font-semibold uppercase tracking-wider text-rose-400 flex items-center justify-between mb-1">
+                    <span>Direct Dependents (1-Hop):</span>
+                    <span>{blastRadius.direct_affected_files.length}</span>
                   </span>
                   <div className="space-y-1">
-                    {blastRadius.direct_affected_files.map((df, idx) => (
-                      <div key={idx} className="p-1.5 rounded bg-[#13141a] border border-zinc-800/80 text-[10px] font-mono text-zinc-300 truncate">
+                    {blastRadius.direct_affected_files.length === 0 ? (
+                      <div className="p-1.5 rounded bg-[#13141a] border border-zinc-800/50 text-[10px] font-mono text-zinc-600 italic">None</div>
+                    ) : blastRadius.direct_affected_files.map((df, idx) => (
+                      <div key={idx} className="p-1.5 rounded bg-[#13141a] border border-rose-900/30 text-[10px] font-mono text-zinc-300 truncate" title={df}>
+                        {df}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Indirect Dependents */}
+                <div>
+                  <span className="text-[10px] font-mono font-semibold uppercase tracking-wider text-amber-400 flex items-center justify-between mb-1">
+                    <span>Indirect Dependents (2+ Hop):</span>
+                    <span>{blastRadius.indirect_affected_files.length}</span>
+                  </span>
+                  <div className="space-y-1 max-h-24 overflow-y-auto">
+                    {blastRadius.indirect_affected_files.length === 0 ? (
+                      <div className="p-1.5 rounded bg-[#13141a] border border-zinc-800/50 text-[10px] font-mono text-zinc-600 italic">None</div>
+                    ) : blastRadius.indirect_affected_files.map((df, idx) => (
+                      <div key={idx} className="p-1.5 rounded bg-[#13141a] border border-amber-900/30 text-[10px] font-mono text-zinc-400 truncate" title={df}>
                         {df}
                       </div>
                     ))}

@@ -169,6 +169,12 @@ export const App: React.FC = () => {
     return await api.askAI(currentRepoId, question);
   };
 
+  const handleReRunEvaluation = async () => {
+    if (!currentRepoId) return;
+    const evalData = await api.getEvaluation(currentRepoId);
+    setEvaluation(evalData);
+  };
+
   return (
     <div className="flex flex-col h-screen w-screen overflow-hidden bg-[#090a0d] text-zinc-100 font-sans">
       {/* Precision Header */}
@@ -278,6 +284,7 @@ export const App: React.FC = () => {
         <EvaluationDashboard
           evaluation={evaluation}
           onClose={() => setIsEvalOpen(false)}
+          onReRun={handleReRunEvaluation}
         />
       )}
     </div>

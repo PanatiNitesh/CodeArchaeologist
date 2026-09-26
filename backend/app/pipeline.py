@@ -126,9 +126,20 @@ class CodeArchaeologistPipeline:
         self.rag_engine = EvidenceRAGEngine(retriever)
 
         # PHASE 6: Blast Radius & ML Change Predictor
+        rename_map = {}
+        for commit in self.commits:
+            for path, status in getattr(commit, "file_statuses", {}).items():
+                if status and status.startswith("renamed_to:"):
+                    new_path = status.replace("renamed_to:", "").replace("\\", "/")
+                    rename_map[path.replace("\\", "/")] = new_path
+        for old_p, new_p in list(rename_map.items()):
+            while new_p in rename_map:
+                new_p = rename_map[new_p]
+            rename_map[old_p] = new_p
+
         file_meta_map = {f["path"]: f for f in classified_files}
         self.blast_calculator = BlastRadiusCalculator(self.nx_dep_graph, file_meta_map)
-        self.change_predictor = MLChangeImpactPredictor(self.commits, self.nx_dep_graph, file_meta_map)
+        self.change_predictor = MLChangeImpactPredictor(self.commits, self.nx_dep_graph, file_meta_map, rename_map=rename_map)
 
         # PHASE 7: Evaluation Suite
         arch_metrics = self.arch_evaluator.evaluate_graph(self.nx_dep_graph, classified_files)
@@ -317,9 +328,23 @@ class CodeArchaeologistPipeline:
                 self.rag_engine = EvidenceRAGEngine(retriever)
 
                 # 8. Initialize Blast Radius & ML Predictor
+                rename_rows = cursor.execute(
+                    "SELECT file_path, status FROM commit_files WHERE repo_id = ? AND status LIKE 'renamed_to:%'",
+                    (self.repo_id,)
+                ).fetchall()
+                rename_map = {}
+                for r in rename_rows:
+                    old_p = r["file_path"].replace("\\", "/")
+                    new_p = r["status"].replace("renamed_to:", "").replace("\\", "/")
+                    rename_map[old_p] = new_p
+                for old_p, new_p in list(rename_map.items()):
+                    while new_p in rename_map:
+                        new_p = rename_map[new_p]
+                    rename_map[old_p] = new_p
+
                 file_meta_map = {f["path"]: f for f in self.files_data}
                 self.blast_calculator = BlastRadiusCalculator(self.nx_dep_graph, file_meta_map)
-                self.change_predictor = MLChangeImpactPredictor(self.commits, self.nx_dep_graph, file_meta_map)
+                self.change_predictor = MLChangeImpactPredictor(self.commits, self.nx_dep_graph, file_meta_map, rename_map=rename_map)
 
                 # 9. Evaluation
                 arch_metrics = self.arch_evaluator.evaluate_graph(self.nx_dep_graph, self.files_data)

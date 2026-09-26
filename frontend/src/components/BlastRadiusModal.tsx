@@ -234,15 +234,19 @@ export const BlastRadiusModal: React.FC<BlastRadiusModalProps> = ({
             </div>
           </div>
 
-          {/* Breakdown Lists */}
+          {/* Breakdown Lists — 4-panel grid */}
           <div className="grid grid-cols-2 gap-3 font-mono">
             <div>
-              <span className="text-[10px] uppercase font-semibold text-zinc-400 block mb-1">
-                Direct Consumers (1-Hop)
+              <span className="text-[10px] uppercase font-semibold text-rose-400 block mb-1">
+                Direct Dependents (1-Hop) — {blastRadius.direct_affected_files.length}
               </span>
               <div className="space-y-1 max-h-36 overflow-y-auto">
-                {blastRadius.direct_affected_files.map((f, i) => (
-                  <div key={i} className="p-1.5 rounded bg-[#101116] border border-zinc-800 text-[10px] text-zinc-300 truncate">
+                {blastRadius.direct_affected_files.length === 0 ? (
+                  <div className="p-1.5 rounded bg-[#101116] border border-zinc-800/50 text-[10px] text-zinc-600 italic">
+                    No direct dependents
+                  </div>
+                ) : blastRadius.direct_affected_files.map((f, i) => (
+                  <div key={i} className="p-1.5 rounded bg-[#101116] border border-rose-900/30 text-[10px] text-zinc-300 truncate" title={f}>
                     {f}
                   </div>
                 ))}
@@ -250,18 +254,108 @@ export const BlastRadiusModal: React.FC<BlastRadiusModalProps> = ({
             </div>
 
             <div>
-              <span className="text-[10px] uppercase font-semibold text-zinc-400 block mb-1">
-                Transitive Downstream Components
+              <span className="text-[10px] uppercase font-semibold text-amber-400 block mb-1">
+                Indirect Dependents (2+ Hop) — {blastRadius.indirect_affected_files.length}
               </span>
               <div className="space-y-1 max-h-36 overflow-y-auto">
-                {blastRadius.indirect_affected_files.map((f, i) => (
-                  <div key={i} className="p-1.5 rounded bg-[#101116] border border-zinc-800 text-[10px] text-zinc-400 truncate">
+                {blastRadius.indirect_affected_files.length === 0 ? (
+                  <div className="p-1.5 rounded bg-[#101116] border border-zinc-800/50 text-[10px] text-zinc-600 italic">
+                    No transitive dependents
+                  </div>
+                ) : blastRadius.indirect_affected_files.map((f, i) => (
+                  <div key={i} className="p-1.5 rounded bg-[#101116] border border-amber-900/30 text-[10px] text-zinc-400 truncate" title={f}>
                     {f}
                   </div>
                 ))}
               </div>
             </div>
+
+            <div>
+              <span className="text-[10px] uppercase font-semibold text-pink-400 block mb-1">
+                Affected Tests — {blastRadius.affected_tests.length}
+              </span>
+              <div className="space-y-1 max-h-32 overflow-y-auto">
+                {blastRadius.affected_tests.length === 0 ? (
+                  <div className="p-1.5 rounded bg-[#101116] border border-zinc-800/50 text-[10px] text-zinc-600 italic">
+                    No test files in blast path
+                  </div>
+                ) : blastRadius.affected_tests.map((t, i) => (
+                  <div key={i} className="p-1.5 rounded bg-pink-950/20 border border-pink-900/40 text-[10px] text-pink-300 truncate" title={t}>
+                    {t}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <span className="text-[10px] uppercase font-semibold text-emerald-400 block mb-1">
+                Affected API Routes — {blastRadius.affected_apis.length}
+              </span>
+              <div className="space-y-1 max-h-32 overflow-y-auto">
+                {blastRadius.affected_apis.length === 0 ? (
+                  <div className="p-1.5 rounded bg-[#101116] border border-zinc-800/50 text-[10px] text-zinc-600 italic">
+                    No API routes in blast path
+                  </div>
+                ) : blastRadius.affected_apis.map((a, i) => (
+                  <div key={i} className="p-1.5 rounded bg-emerald-950/20 border border-emerald-900/40 text-[10px] text-emerald-300 truncate" title={a}>
+                    {a}
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
+
+          {/* Historical Co-Change Evidence */}
+          {predictions && predictions.predicted_files.some(p => p.co_change_count > 0) && (
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <GitCommit className="w-3.5 h-3.5 text-cyan-400" />
+                  <span className="text-[11px] font-mono font-semibold uppercase tracking-wider text-zinc-300">
+                    Historical Co-Change Evidence
+                  </span>
+                </div>
+                <span className="text-[10px] font-mono text-zinc-500">
+                  From real Git commit history — no inference
+                </span>
+              </div>
+              <div className="p-3 rounded bg-[#0e1018] border border-cyan-900/40 space-y-1.5">
+                <p className="text-[10px] font-mono text-zinc-500 mb-2">
+                  Files that co-changed with <span className="text-cyan-300">{blastRadius.target_file}</span> in past commits.
+                  Counts are exact commit frequencies from git log.
+                </p>
+                <div className="space-y-1">
+                  {predictions.predicted_files
+                    .filter(p => p.co_change_count > 0)
+                    .sort((a, b) => b.co_change_count - a.co_change_count)
+                    .map((item, idx) => {
+                      const maxCount = Math.max(...predictions.predicted_files.map(p => p.co_change_count), 1);
+                      const barPct = Math.round((item.co_change_count / maxCount) * 100);
+                      return (
+                        <div key={idx} className="flex items-center gap-3 p-1.5 rounded bg-[#111420] border border-zinc-800/60">
+                          <div className="flex-1 min-w-0">
+                            <span className="text-[10px] font-mono text-zinc-300 truncate block" title={item.file_path}>
+                              {item.file_path}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <div className="w-24 bg-zinc-800 rounded-full h-1.5 overflow-hidden">
+                              <div
+                                className="h-full rounded-full bg-cyan-500 transition-all"
+                                style={{ width: `${barPct}%` }}
+                              />
+                            </div>
+                            <span className="text-[10px] font-mono text-cyan-400 font-bold w-16 text-right">
+                              {item.co_change_count} commit{item.co_change_count !== 1 ? 's' : ''}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
