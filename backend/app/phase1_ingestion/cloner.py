@@ -71,8 +71,12 @@ class RepoCloner:
                     logger.warning(f"Corrupted existing clone at {destination}, recloning... {e}")
                     shutil.rmtree(destination, ignore_errors=True)
 
-        logger.info(f"Cloning {repo_url_or_path} into {destination}...")
-        repo = git.Repo.clone_from(repo_url_or_path, destination)
+        logger.info(f"Cloning {repo_url_or_path} into {destination} (shallow clone depth=50)...")
+        try:
+            repo = git.Repo.clone_from(repo_url_or_path, destination, depth=50, single_branch=True)
+        except Exception as e:
+            logger.info(f"Shallow clone failed ({e}), falling back to full clone...")
+            repo = git.Repo.clone_from(repo_url_or_path, destination)
         default_branch = repo.active_branch.name if not repo.head.is_detached else "main"
 
         return repo_id, str(destination), {

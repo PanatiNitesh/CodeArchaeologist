@@ -173,12 +173,20 @@ def ingest_repository(req: IngestRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/ingest/async")
-def ingest_repository_async(req: IngestRequest, bg_tasks: BackgroundTasks):
+def ingest_repository_async(req: IngestRequest):
     import uuid
+    import threading
     task_id = f"task_{uuid.uuid4().hex[:8]}"
     tasks_status[task_id] = {"status": "queued", "progress": "Queued for processing"}
     db_service.db.save_task(task_id, status="queued", progress="Queued for processing")
-    bg_tasks.add_task(_run_ingest_background, task_id, req.repo_url_or_path, req.force_reclone)
+    
+    # Run in dedicated thread so FastAPI event loop remains completely unblocked for polling requests
+    worker = threading.Thread(
+        target=_run_ingest_background,
+        args=(task_id, req.repo_url_or_path, req.force_reclone),
+        daemon=True
+    )
+    worker.start()
     return {"task_id": task_id, "status": "queued"}
 
 @app.get("/api/tasks/{task_id}")
