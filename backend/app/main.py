@@ -207,7 +207,22 @@ def load_sample():
     try:
         sample_path = create_sample_repository()
         repo_id = "sample_enterprise_ecommerce"
+        if repo_id in pipelines:
+            return {
+                "success": True,
+                "repo_id": repo_id,
+                "summary": {"total_files": len(pipelines[repo_id].files_data)}
+            }
+        
         pipeline = CodeArchaeologistPipeline(repo_id, sample_path)
+        if pipeline.load_from_db():
+            pipelines[repo_id] = pipeline
+            return {
+                "success": True,
+                "repo_id": repo_id,
+                "summary": {"total_files": len(pipeline.files_data)}
+            }
+
         summary = pipeline.run_full_pipeline()
         pipelines[repo_id] = pipeline
         return {

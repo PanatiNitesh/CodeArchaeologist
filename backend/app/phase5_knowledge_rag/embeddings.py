@@ -10,11 +10,21 @@ _MODEL_LOAD_ATTEMPTED = False
 
 def get_shared_sentence_transformer():
     global _SHARED_MODEL, _MODEL_LOAD_ATTEMPTED
+    import os
     if _SHARED_MODEL is not None:
         return _SHARED_MODEL
     if _MODEL_LOAD_ATTEMPTED:
         return None
     _MODEL_LOAD_ATTEMPTED = True
+
+    # Render free tier provides only 512MB RAM. Loading PyTorch neural model trips Render's OOM killer (502 Bad Gateway).
+    # We automatically use the instant, 15MB Scikit-learn TF-IDF LSA semantic engine on Render unless FORCE_NEURAL=true.
+    is_render = os.environ.get("RENDER", "").lower() == "true"
+    force_neural = os.environ.get("FORCE_NEURAL", "").lower() == "true"
+    if is_render and not force_neural:
+        logger.info("Render environment detected (512MB RAM limit). Using ultra-lightweight, high-speed Scikit-learn TF-IDF LSA engine to ensure 0% crash rate.")
+        return None
+
     try:
         from sentence_transformers import SentenceTransformer
         _SHARED_MODEL = SentenceTransformer("all-MiniLM-L6-v2")

@@ -7,7 +7,11 @@ import {
   Cpu, 
   Loader2, 
   Command,
-  Sparkles
+  Sparkles,
+  Compass,
+  FolderTree,
+  FileCode2,
+  CalendarClock
 } from 'lucide-react';
 import { Header } from './components/Header';
 import { FileTree } from './components/FileTree';
@@ -50,6 +54,7 @@ export const App: React.FC = () => {
   const [isBlastModalOpen, setIsBlastModalOpen] = useState<boolean>(false);
   const [isEvalOpen, setIsEvalOpen] = useState<boolean>(false);
   const [chatInitialPrompt, setChatInitialPrompt] = useState<string>('');
+  const [mobileTab, setMobileTab] = useState<'graph' | 'files' | 'intelligence' | 'timeline'>('graph');
 
   // Initial load
   useEffect(() => {
@@ -198,52 +203,154 @@ export const App: React.FC = () => {
           </span>
         </div>
       ) : (
-        <div className="flex-1 flex flex-col min-h-0 p-2 gap-2 overflow-hidden">
-          {/* Top Grid: Explorer (Col 2.8) + Topology Graph (Col 5.8) + Inspector (Col 3.4) */}
-          <div className="flex-1 grid grid-cols-12 gap-2 min-h-0">
-            {/* Left: Explorer */}
-            <div className="col-span-3 h-full min-h-0">
-              <FileTree
-                files={files}
-                selectedFilePath={selectedFilePath}
-                onSelectFile={handleSelectFile}
-              />
-            </div>
-
-            {/* Center: Topology Graph */}
-            <div className="col-span-5 h-full min-h-0">
-              <ArchitectureGraph
-                graph={graph}
-                selectedFilePath={selectedFilePath}
-                onSelectNode={handleSelectFile}
-                blastRadius={blastRadius}
-              />
-            </div>
-
-            {/* Right: Component Inspector */}
-            <div className="col-span-4 h-full min-h-0">
-              <FileIntelligence
-                file={selectedFile}
-                evolution={fileEvolution}
-                blastRadius={blastRadius}
-                predictions={predictions}
-                onAskAI={handleAskAIFromComponent}
-                onOpenBlastModal={() => setIsBlastModalOpen(true)}
-              />
-            </div>
+        <div className="flex-1 flex flex-col min-h-0 p-1 sm:p-2 gap-2 overflow-hidden">
+          {/* Mobile View Switcher Tab Bar (< lg screens) */}
+          <div className="lg:hidden flex items-center bg-[#111218] p-1 rounded-lg border border-zinc-800 shrink-0">
+            <button
+              onClick={() => setMobileTab('graph')}
+              className={`flex-1 py-1.5 px-2 rounded text-xs font-mono flex items-center justify-center gap-1.5 transition-all ${
+                mobileTab === 'graph' 
+                  ? 'bg-indigo-600/30 text-indigo-300 font-semibold border border-indigo-500/50' 
+                  : 'text-zinc-400 hover:text-zinc-200'
+              }`}
+            >
+              <Compass className="w-3.5 h-3.5" />
+              <span>Graph</span>
+            </button>
+            <button
+              onClick={() => setMobileTab('files')}
+              className={`flex-1 py-1.5 px-2 rounded text-xs font-mono flex items-center justify-center gap-1.5 transition-all ${
+                mobileTab === 'files' 
+                  ? 'bg-indigo-600/30 text-indigo-300 font-semibold border border-indigo-500/50' 
+                  : 'text-zinc-400 hover:text-zinc-200'
+              }`}
+            >
+              <FolderTree className="w-3.5 h-3.5" />
+              <span>Files</span>
+            </button>
+            <button
+              onClick={() => setMobileTab('intelligence')}
+              className={`flex-1 py-1.5 px-2 rounded text-xs font-mono flex items-center justify-center gap-1.5 transition-all ${
+                mobileTab === 'intelligence' 
+                  ? 'bg-indigo-600/30 text-indigo-300 font-semibold border border-indigo-500/50' 
+                  : 'text-zinc-400 hover:text-zinc-200'
+              }`}
+            >
+              <FileCode2 className="w-3.5 h-3.5" />
+              <span>Intel</span>
+            </button>
+            <button
+              onClick={() => setMobileTab('timeline')}
+              className={`flex-1 py-1.5 px-2 rounded text-xs font-mono flex items-center justify-center gap-1.5 transition-all ${
+                mobileTab === 'timeline' 
+                  ? 'bg-indigo-600/30 text-indigo-300 font-semibold border border-indigo-500/50' 
+                  : 'text-zinc-400 hover:text-zinc-200'
+              }`}
+            >
+              <CalendarClock className="w-3.5 h-3.5" />
+              <span>Timeline</span>
+            </button>
           </div>
 
-          {/* Bottom Dock: Software Evolution Timeline */}
-          <div className="h-56 shrink-0 min-h-0">
-            <TimelineView
-              timeline={timeline}
-              onSelectCommit={(c) => {
-                if (c.changed_files.length > 0) {
-                  const target = files.find(f => f.path.includes(c.changed_files[0])) || files[0];
-                  if (target) handleSelectFile(target.path);
-                }
-              }}
-            />
+          {/* Mobile Single-Pane Viewport (< lg screens) */}
+          <div className="lg:hidden flex-1 min-h-0 overflow-y-auto">
+            {mobileTab === 'graph' && (
+              <div className="h-full min-h-[400px]">
+                <ArchitectureGraph
+                  graph={graph}
+                  selectedFilePath={selectedFilePath}
+                  onSelectNode={handleSelectFile}
+                  blastRadius={blastRadius}
+                />
+              </div>
+            )}
+            {mobileTab === 'files' && (
+              <div className="h-full min-h-[400px]">
+                <FileTree
+                  files={files}
+                  selectedFilePath={selectedFilePath}
+                  onSelectFile={(p) => {
+                    handleSelectFile(p);
+                    setMobileTab('intelligence');
+                  }}
+                />
+              </div>
+            )}
+            {mobileTab === 'intelligence' && (
+              <div className="h-full min-h-[400px]">
+                <FileIntelligence
+                  file={selectedFile}
+                  evolution={fileEvolution}
+                  blastRadius={blastRadius}
+                  predictions={predictions}
+                  onAskAI={handleAskAIFromComponent}
+                  onOpenBlastModal={() => setIsBlastModalOpen(true)}
+                />
+              </div>
+            )}
+            {mobileTab === 'timeline' && (
+              <div className="h-full min-h-[400px]">
+                <TimelineView
+                  timeline={timeline}
+                  onSelectCommit={(c) => {
+                    if (c.changed_files.length > 0) {
+                      const target = files.find(f => f.path.includes(c.changed_files[0])) || files[0];
+                      if (target) {
+                        handleSelectFile(target.path);
+                        setMobileTab('intelligence');
+                      }
+                    }
+                  }}
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Desktop Multi-Pane Grid Viewport (>= lg screens) */}
+          <div className="hidden lg:flex flex-col flex-1 min-h-0 gap-2">
+            {/* Top Grid: Explorer (Col 3) + Topology Graph (Col 5) + Inspector (Col 4) */}
+            <div className="flex-1 grid grid-cols-12 gap-2 min-h-0">
+              <div className="col-span-3 h-full min-h-0">
+                <FileTree
+                  files={files}
+                  selectedFilePath={selectedFilePath}
+                  onSelectFile={handleSelectFile}
+                />
+              </div>
+
+              <div className="col-span-5 h-full min-h-0">
+                <ArchitectureGraph
+                  graph={graph}
+                  selectedFilePath={selectedFilePath}
+                  onSelectNode={handleSelectFile}
+                  blastRadius={blastRadius}
+                />
+              </div>
+
+              <div className="col-span-4 h-full min-h-0">
+                <FileIntelligence
+                  file={selectedFile}
+                  evolution={fileEvolution}
+                  blastRadius={blastRadius}
+                  predictions={predictions}
+                  onAskAI={handleAskAIFromComponent}
+                  onOpenBlastModal={() => setIsBlastModalOpen(true)}
+                />
+              </div>
+            </div>
+
+            {/* Bottom Dock: Software Evolution Timeline */}
+            <div className="h-56 shrink-0 min-h-0">
+              <TimelineView
+                timeline={timeline}
+                onSelectCommit={(c) => {
+                  if (c.changed_files.length > 0) {
+                    const target = files.find(f => f.path.includes(c.changed_files[0])) || files[0];
+                    if (target) handleSelectFile(target.path);
+                  }
+                }}
+              />
+            </div>
           </div>
         </div>
       )}

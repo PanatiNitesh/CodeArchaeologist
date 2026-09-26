@@ -189,33 +189,33 @@ export const Header: React.FC<HeaderProps> = ({
 
         <button
           onClick={onOpenEval}
-          className="btn-studio btn-studio-secondary"
+          className="btn-studio btn-studio-secondary p-1.5 sm:px-2.5 sm:py-1"
           title="Empirical Phase 7 Benchmarks"
         >
           <BarChart2 className="w-3.5 h-3.5 text-zinc-400" />
-          <span>Evaluation</span>
+          <span className="hidden md:inline">Evaluation</span>
         </button>
 
         <button
           onClick={onLoadSample}
           disabled={loading}
-          className="btn-studio btn-studio-secondary"
+          className="btn-studio btn-studio-secondary p-1.5 sm:px-2.5 sm:py-1"
           title="Reload 2022-2026 Enterprise E-Commerce Evolution Benchmark"
         >
           <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-          <span>Demo Repo</span>
+          <span className="hidden sm:inline">Demo</span>
         </button>
 
         {/* 1-Click Live GitHub Demo Pathway */}
         <div className="relative group">
           <button
             disabled={loading}
-            className="btn-studio btn-studio-secondary flex items-center gap-1.5 text-cyan-300 border-cyan-900/40 hover:border-cyan-700/60"
+            className="btn-studio btn-studio-secondary flex items-center gap-1.5 text-cyan-300 border-cyan-900/40 hover:border-cyan-700/60 p-1.5 sm:px-2.5 sm:py-1"
             title="1-Click Analyze Real Open-Source GitHub Repositories"
           >
             <FolderGit2 className="w-3.5 h-3.5 text-cyan-400" />
-            <span>Live GitHub Demo</span>
-            <ChevronDown className="w-3 h-3 text-zinc-500" />
+            <span className="hidden lg:inline">Live Demo</span>
+            <ChevronDown className="w-3 h-3 text-zinc-500 hidden sm:inline" />
           </button>
           
           <div className="hidden group-hover:block absolute right-0 top-full mt-1 w-64 bg-[#14151f] border border-zinc-800 rounded-lg shadow-2xl p-1.5 z-50">
@@ -244,10 +244,10 @@ export const Header: React.FC<HeaderProps> = ({
         <button
           onClick={() => setShowIngestModal(true)}
           disabled={loading}
-          className="btn-studio btn-studio-primary"
+          className="btn-studio btn-studio-primary p-1.5 sm:px-2.5 sm:py-1"
         >
           <Plus className="w-3.5 h-3.5" />
-          <span>Ingest Repo</span>
+          <span className="hidden sm:inline">Ingest</span>
         </button>
       </div>
 
