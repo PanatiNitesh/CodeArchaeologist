@@ -94,8 +94,18 @@ class GroundingEnforcer:
                     val = float(item["score"])
                     max_score = max(max_score, val / 100.0 if val > 1.0 else val)
 
-        # Sufficiency threshold: At least 15% term coverage or a retrieval score above 0.25
-        if coverage < 0.15 and max_score < 0.25 and len(matched_tokens) == 0:
+        # Check if question is an architectural / overview query (e.g. "whats the architecture", "explain codebase")
+        arch_overview_tokens = {
+            "architecture", "architectural", "overview", "structure", "system",
+            "design", "components", "summary", "explain", "codebase", "project",
+            "pipeline", "stack", "layers", "workflow", "work", "app", "application",
+            "done", "what", "how", "features", "frontend", "backend"
+        }
+        if any(tok in arch_overview_tokens for tok in q_tokens) and evidence:
+            return True, "Architectural overview query recognized; proceeding with repository structural evidence."
+
+        # Sufficiency threshold: At least 15% term coverage or a retrieval score above 0.18
+        if coverage < 0.15 and max_score < 0.18 and len(matched_tokens) == 0:
             return False, (
                 f"Retrieved items have insufficient relevance to '{question}' "
                 f"(term overlap: {coverage:.1%}, max retrieval score: {max_score:.2f})."

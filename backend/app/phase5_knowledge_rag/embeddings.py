@@ -4,28 +4,40 @@ from typing import List, Dict, Any, Optional
 
 logger = logging.getLogger(__name__)
 
+# Global singleton cache for SentenceTransformer model to prevent reloading weights into memory
+_SHARED_MODEL = None
+_MODEL_LOAD_ATTEMPTED = False
+
+def get_shared_sentence_transformer():
+    global _SHARED_MODEL, _MODEL_LOAD_ATTEMPTED
+    if _SHARED_MODEL is not None:
+        return _SHARED_MODEL
+    if _MODEL_LOAD_ATTEMPTED:
+        return None
+    _MODEL_LOAD_ATTEMPTED = True
+    try:
+        from sentence_transformers import SentenceTransformer
+        _SHARED_MODEL = SentenceTransformer("all-MiniLM-L6-v2")
+        logger.info("SentenceTransformer all-MiniLM-L6-v2 loaded into singleton cache.")
+        return _SHARED_MODEL
+    except Exception as e:
+        logger.warning(f"Could not load SentenceTransformer ({e}), using TF-IDF LSA engine.")
+        return None
+
 class EmbeddingEngine:
     """
     Semantic embedding generator with dual-engine support:
-    1. Sentence-Transformers (Local neural model)
+    1. Sentence-Transformers (Local neural model, cached globally)
     2. High-performance Scikit-learn TF-IDF LSA semantic vectorizer fallback (instant, zero download)
     """
 
     def __init__(self, use_neural: bool = True):
         self.use_neural = use_neural
-        self.model = None
         self.vectorizer = None
         self.dim = 384 if use_neural else 128
-
-        if use_neural:
-            try:
-                from sentence_transformers import SentenceTransformer
-                self.model = SentenceTransformer("all-MiniLM-L6-v2")
-                self.dim = 384
-                logger.info("SentenceTransformer all-MiniLM-L6-v2 loaded successfully.")
-            except Exception as e:
-                logger.warning(f"Could not load SentenceTransformer ({e}), using TF-IDF LSA engine.")
-                self.model = None
+        self.model = get_shared_sentence_transformer() if use_neural else None
+        if not self.model and use_neural:
+            self.dim = 128
 
     def fit_and_embed(self, documents: List[str]) -> np.ndarray:
         if not documents:
@@ -33,7 +45,7 @@ class EmbeddingEngine:
 
         if self.model:
             try:
-                embeddings = self.model.encode(documents, show_progress_bar=False, convert_to_numpy=True)
+                embeddings = self.model.encode(documents, batch_size=32, show_progress_bar=False, convert_to_numpy=True)
                 return embeddings
             except Exception as e:
                 logger.warning(f"Neural embed failed, falling back to TF-IDF: {e}")
