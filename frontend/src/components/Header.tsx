@@ -21,6 +21,7 @@ interface HeaderProps {
   onIngest: (url: string) => Promise<void>;
   onLoadSample: () => Promise<void>;
   onOpenEval: () => void;
+  onOpenAnalytics: () => void;
   loading: boolean;
 }
 
@@ -31,6 +32,7 @@ export const Header: React.FC<HeaderProps> = ({
   onIngest,
   onLoadSample,
   onOpenEval,
+  onOpenAnalytics,
   loading
 }) => {
   const [showIngestModal, setShowIngestModal] = useState(false);
@@ -194,6 +196,15 @@ export const Header: React.FC<HeaderProps> = ({
         >
           <BarChart2 className="w-3.5 h-3.5 text-zinc-400" />
           <span className="hidden md:inline">Evaluation</span>
+        </button>
+
+        <button
+          onClick={onOpenAnalytics}
+          className="btn-studio btn-studio-secondary p-1.5 sm:px-2.5 sm:py-1 flex items-center gap-1.5 text-indigo-300 border-indigo-900/40 hover:border-indigo-700/60"
+          title="Live Usage & Visitor Analytics"
+        >
+          <Activity className="w-3.5 h-3.5 text-indigo-400" />
+          <span className="hidden md:inline">Analytics</span>
         </button>
 
         <button

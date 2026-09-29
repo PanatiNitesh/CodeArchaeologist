@@ -274,5 +274,74 @@ export const api = {
   async getEvaluation(repoId: string): Promise<OverallEvaluation> {
     const res = await fetch(`${API_BASE}/repo/${repoId}/evaluation`);
     return res.json();
+  },
+
+  async trackEvent(eventType: string, repoId?: string, details?: any): Promise<void> {
+    try {
+      await fetch(`${API_BASE}/analytics/track`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          event_type: eventType,
+          visitor_id: getOrCreateVisitorId(),
+          session_id: getSessionId(),
+          repo_id: repoId,
+          details
+        })
+      });
+    } catch {
+      // Non-blocking telemetry
+    }
+  },
+
+  async getAnalyticsStats(): Promise<AnalyticsStats> {
+    const res = await fetch(`${API_BASE}/analytics/stats`);
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
   }
 };
+
+function getOrCreateVisitorId(): string {
+  try {
+    let vid = localStorage.getItem('ca_visitor_id');
+    if (!vid) {
+      vid = 'usr_' + Math.random().toString(36).substring(2, 10) + Date.now().toString(36);
+      localStorage.setItem('ca_visitor_id', vid);
+    }
+    return vid;
+  } catch {
+    return 'anon_guest';
+  }
+}
+
+let currentSessionId = '';
+function getSessionId(): string {
+  if (!currentSessionId) {
+    currentSessionId = 'sess_' + Math.random().toString(36).substring(2, 10) + Date.now().toString(36);
+  }
+  return currentSessionId;
+}
+
+export interface AnalyticsStats {
+  total_visits: number;
+  unique_visitors: number;
+  total_ai_queries: number;
+  total_blast_analyses: number;
+  total_repos_ingested: number;
+  total_events: number;
+  event_breakdown: Record<string, number>;
+  top_repos: Array<{ repo_id: string; count: number }>;
+  recent_events: Array<{
+    id: number;
+    event_type: string;
+    repo_id?: string;
+    details?: any;
+    created_at: string;
+  }>;
+  daily_stats: Array<{
+    day: string;
+    total_events: number;
+    visits: number;
+    unique_visitors: number;
+  }>;
+}

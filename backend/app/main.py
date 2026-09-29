@@ -8,7 +8,8 @@ try:
     load_dotenv()
 except ImportError:
     pass
-from fastapi import FastAPI, HTTPException, Query, BackgroundTasks
+import hashlib
+from fastapi import FastAPI, HTTPException, Query, BackgroundTasks, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -64,6 +65,24 @@ class IngestRequest(BaseModel):
 class ChatRequest(BaseModel):
     question: str
 
+class AnalyticsTrackRequest(BaseModel):
+    event_type: str
+    session_id: Optional[str] = None
+    visitor_id: Optional[str] = None
+    repo_id: Optional[str] = None
+    details: Optional[Dict[str, Any]] = None
+
+def get_client_hash(request: Request, visitor_id: Optional[str] = None) -> str:
+    if visitor_id and visitor_id.strip():
+        return visitor_id.strip()
+    ip = request.client.host if request.client else "127.0.0.1"
+    forwarded = request.headers.get("x-forwarded-for")
+    if forwarded:
+        ip = forwarded.split(",")[0].strip()
+    ua = request.headers.get("user-agent", "unknown")
+    raw = f"{ip}:{ua}"
+    return "vis_" + hashlib.sha256(raw.encode()).hexdigest()[:12]
+
 tasks_status: Dict[str, Dict[str, Any]] = {}
 
 def get_or_load_pipeline(repo_id: str, force_reanalyze: bool = False) -> CodeArchaeologistPipeline:
@@ -113,6 +132,11 @@ def _run_ingest_background(task_id: str, repo_url_or_path: str, force_reclone: b
             "meta": meta
         }
         db_service.db.save_task(task_id, status="completed", progress="Completed", repo_id=repo_id, summary=summary)
+        db_service.db.record_analytics_event(
+            event_type="repo_ingest",
+            repo_id=repo_id,
+            details={"url": meta.get("url", repo_url_or_path), "name": meta.get("name", repo_id), "async": True}
+        )
     except Exception as e:
         logger.error(f"Async ingestion task {task_id} failed: {e}", exc_info=True)
         tasks_status[task_id] = {"status": "failed", "error": str(e)}
@@ -130,6 +154,7 @@ def root():
     }
 
 @app.get("/api/health")
+@app.get("/api/ping")
 def health():
     return {
         "system": "CodeArchaeologist",
@@ -147,6 +172,26 @@ def health():
         ]
     }
 
+@app.post("/api/analytics/track")
+def track_analytics(req: AnalyticsTrackRequest, request: Request):
+    visitor_id = get_client_hash(request, req.visitor_id)
+    ip = request.headers.get("x-forwarded-for", request.client.host if request.client else None)
+    ua = request.headers.get("user-agent")
+    event_id = db_service.db.record_analytics_event(
+        event_type=req.event_type,
+        session_id=req.session_id,
+        visitor_id=visitor_id,
+        repo_id=req.repo_id,
+        details=req.details,
+        client_ip=ip,
+        user_agent=ua
+    )
+    return {"success": True, "event_id": event_id, "visitor_id": visitor_id}
+
+@app.get("/api/analytics/stats")
+def get_analytics_stats():
+    return db_service.db.get_analytics_stats()
+
 @app.post("/api/ingest")
 def ingest_repository(req: IngestRequest):
     try:
@@ -162,6 +207,11 @@ def ingest_repository(req: IngestRequest):
         pipeline = CodeArchaeologistPipeline(repo_id, local_path)
         summary = pipeline.run_full_pipeline()
         pipelines[repo_id] = pipeline
+        db_service.db.record_analytics_event(
+            event_type="repo_ingest",
+            repo_id=repo_id,
+            details={"url": meta.get("url", req.repo_url_or_path), "name": meta.get("name", repo_id)}
+        )
         return {
             "success": True,
             "repo_id": repo_id,
@@ -233,6 +283,11 @@ def load_sample():
 
         summary = pipeline.run_full_pipeline()
         pipelines[repo_id] = pipeline
+        db_service.db.record_analytics_event(
+            event_type="load_sample",
+            repo_id=repo_id,
+            details={"sample": True}
+        )
         return {
             "success": True,
             "repo_id": repo_id,
@@ -279,16 +334,31 @@ def get_file_intelligence(repo_id: str, file_path: str = Query(...)):
 @app.get("/api/repo/{repo_id}/blast-radius", response_model=BlastRadiusResult)
 def calculate_blast_radius(repo_id: str, target_file: str = Query(...)):
     pipeline = get_or_load_pipeline(repo_id)
+    db_service.db.record_analytics_event(
+        event_type="blast_radius",
+        repo_id=repo_id,
+        details={"target_file": target_file}
+    )
     return pipeline.blast_calculator.calculate_blast_radius(target_file)
 
 @app.get("/api/repo/{repo_id}/predict-impact", response_model=ChangeImpactPrediction)
 def predict_change_impact(repo_id: str, target_file: str = Query(...)):
     pipeline = get_or_load_pipeline(repo_id)
+    db_service.db.record_analytics_event(
+        event_type="impact_predict",
+        repo_id=repo_id,
+        details={"target_file": target_file}
+    )
     return pipeline.change_predictor.predict_impact(target_file)
 
 @app.post("/api/repo/{repo_id}/ask", response_model=RAGAnswerResponse)
 def ask_ai(repo_id: str, req: ChatRequest):
     pipeline = get_or_load_pipeline(repo_id)
+    db_service.db.record_analytics_event(
+        event_type="ai_query",
+        repo_id=repo_id,
+        details={"question": req.question[:120]}
+    )
     return pipeline.rag_engine.answer_question(req.question)
 
 @app.get("/api/repo/{repo_id}/evaluation", response_model=OverallEvaluation)

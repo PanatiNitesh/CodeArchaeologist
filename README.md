@@ -1,6 +1,5 @@
 # 🏛️ CodeArchaeologist
 > **AI-Powered Software Evolution & Legacy Code Intelligence Engine**
-
 ```mermaid
 graph TD
     classDef source fill:#1e1e2e,stroke:#89b4fa,stroke-width:2px,color:#cdd6f4;
@@ -301,3 +300,13 @@ pytest -v tests/
 - `GET /api/repo/{id}/predict-impact?target_file=...` — ML change-impact likelihood predictions.
 - `POST /api/repo/{id}/ask` — Evidence-based AI RAG chat.
 - `GET /api/repo/{id}/evaluation` — Scientific evaluation metrics.
+- `POST /api/analytics/track` — Record telemetry events and visitor interactions.
+- `GET /api/analytics/stats` — Real-time persistent visitor & usage analytics.
+- `GET /api/ping` & `GET /api/health` — Ultra-fast zero-allocation health and keep-alive check.
+
+---
+
+## ⚡ 24/7 Deployment Keep-Alive & Analytics
+
+- For instructions on preventing Render free tier cold starts and running 24/7 with zero spin-downs, see [**`KEEP_ALIVE_AND_ANALYTICS.md`**](file:///KEEP_ALIVE_AND_ANALYTICS.md).
+- Automated GitHub Actions keep-alive workflow: [`.github/workflows/keep_alive.yml`](file:///.github/workflows/keep_alive.yml).

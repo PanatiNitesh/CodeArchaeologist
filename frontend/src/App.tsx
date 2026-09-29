@@ -21,6 +21,7 @@ import { FileIntelligence } from './components/FileIntelligence';
 import { AIChatDrawer } from './components/AIChatDrawer';
 import { BlastRadiusModal } from './components/BlastRadiusModal';
 import { EvaluationDashboard } from './components/EvaluationDashboard';
+import { AnalyticsModal } from './components/AnalyticsModal';
 import { 
   api, 
   RepositoryItem, 
@@ -53,12 +54,14 @@ export const App: React.FC = () => {
   const [isAIChatOpen, setIsAIChatOpen] = useState<boolean>(false);
   const [isBlastModalOpen, setIsBlastModalOpen] = useState<boolean>(false);
   const [isEvalOpen, setIsEvalOpen] = useState<boolean>(false);
+  const [isAnalyticsOpen, setIsAnalyticsOpen] = useState<boolean>(false);
   const [chatInitialPrompt, setChatInitialPrompt] = useState<string>('');
   const [mobileTab, setMobileTab] = useState<'graph' | 'files' | 'intelligence' | 'timeline'>('graph');
 
   // Initial load
   useEffect(() => {
     loadRepositories();
+    api.trackEvent('page_view');
   }, []);
 
   const loadRepositories = async () => {
@@ -190,6 +193,7 @@ export const App: React.FC = () => {
         onIngest={handleIngest}
         onLoadSample={handleLoadSample}
         onOpenEval={() => setIsEvalOpen(true)}
+        onOpenAnalytics={() => setIsAnalyticsOpen(true)}
         loading={loading}
       />
 
@@ -392,6 +396,13 @@ export const App: React.FC = () => {
           evaluation={evaluation}
           onClose={() => setIsEvalOpen(false)}
           onReRun={handleReRunEvaluation}
+        />
+      )}
+
+      {/* Usage Analytics Modal */}
+      {isAnalyticsOpen && (
+        <AnalyticsModal
+          onClose={() => setIsAnalyticsOpen(false)}
         />
       )}
     </div>

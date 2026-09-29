@@ -1,0 +1,30 @@
+name: Keep Render App Alive (24/7 Warm Pinger)
+
+on:
+  schedule:
+    # Trigger every 10 minutes to prevent Render 15-minute free tier spin-down
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+    inputs:
+      custom_url:
+        description: 'Optional custom URL to ping'
+        required: false
+        default: ''
+
+jobs:
+  ping:
+    name: Ping Health Endpoint
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Ping Keep-Alive
+        run: |
+          TARGET_URL="${{ inputs.custom_url || vars.RENDER_APP_URL || secrets.RENDER_APP_URL || 'https://codearchaeologist.onrender.com' }}"
+          echo "Pinging keep-alive endpoint: ${TARGET_URL}/api/ping"
+          STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" "${TARGET_URL}/api/ping" || echo "000")
+          echo "HTTP Response Status Code: $STATUS_CODE"
+          if [ "$STATUS_CODE" -ge 200 ] && [ "$STATUS_CODE" -lt 400 ]; then
+            echo "✅ Service is active and warm! Instance spin-down prevented."
+          else
+            echo "⚠️ Non-2xx response received ($STATUS_CODE), but incoming HTTP request successfully registered by Render to trigger instance wakeup."
+          fi
